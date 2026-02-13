@@ -39,7 +39,7 @@ export default function Signup() {
 
     setLoading(true);
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: window.location.origin },
@@ -51,20 +51,27 @@ export default function Signup() {
       return;
     }
 
-    // Link manager email to organization
-    const { error: updateError } = await supabase
+    // Insert into managers table to link user to organization
+    const { error: managerError } = await supabase
+      .from("managers" as any)
+      .insert({ email, organization_id: orgId } as any);
+
+    if (managerError) {
+      console.error("Failed to create manager record:", managerError);
+      toast({ title: "Could not link organization", description: managerError.message, variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    // Also update organizations table for RLS compatibility
+    await supabase
       .from("organizations")
       .update({ manager_email: email })
       .eq("id", orgId);
 
     setLoading(false);
-
-    if (updateError) {
-      toast({ title: "Could not link organization", description: updateError.message, variant: "destructive" });
-    } else {
-      toast({ title: "Account created!", description: "Please check your email to verify your account, then log in." });
-      navigate("/pulse/login");
-    }
+    toast({ title: "Account created!", description: "Please check your email to verify your account, then log in." });
+    navigate("/pulse/login");
   };
 
   return (

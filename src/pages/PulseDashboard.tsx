@@ -64,14 +64,47 @@ export default function PulseDashboard() {
       if (!session) { navigate("/pulse/login"); return; }
       setUser(session.user);
 
+      // Fetch manager's organization via managers table
+      const { data: managerData } = await supabase
+        .from("managers" as any)
+        .select("organization_id")
+        .eq("email", session.user.email)
+        .maybeSingle();
+
+      const orgId = (managerData as any)?.organization_id;
+      console.log("Manager organization_id:", orgId);
+
+      if (!orgId) {
+        // Fallback: try organizations.manager_email
+        const { data: orgFallback } = await supabase
+          .from("organizations")
+          .select("*")
+          .eq("manager_email", session.user.email!)
+          .maybeSingle();
+
+        if (orgFallback) {
+          setOrg(orgFallback);
+          console.log("Pulse link org_code:", orgFallback.org_code);
+          const { data: resp } = await supabase
+            .from("pulse_responses")
+            .select("*")
+            .eq("organization_id", orgFallback.id)
+            .eq("is_demo_data", false);
+          setResponses((resp as PulseResponse[]) || []);
+        }
+        setLoading(false);
+        return;
+      }
+
       const { data: orgData } = await supabase
         .from("organizations")
         .select("*")
-        .eq("manager_email", session.user.email)
-        .single();
+        .eq("id", orgId)
+        .maybeSingle();
 
       if (orgData) {
         setOrg(orgData);
+        console.log("Pulse link org_code:", orgData.org_code);
         const { data: resp } = await supabase
           .from("pulse_responses")
           .select("*")
@@ -150,6 +183,19 @@ export default function PulseDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Activity className="w-8 h-8 text-primary animate-pulse" />
+      </div>
+    );
+  }
+
+  if (!org && !demoMode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center space-y-4">
+          <AlertTriangle className="w-12 h-12 text-destructive mx-auto" />
+          <h2 className="text-xl font-bold">No organization assigned to this account</h2>
+          <p className="text-muted-foreground">Please contact support or sign up with an organization.</p>
+          <Button variant="outline" onClick={handleLogout}>Sign Out</Button>
+        </div>
       </div>
     );
   }
