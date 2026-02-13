@@ -16,6 +16,7 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [orgId, setOrgId] = useState("");
   const [orgs, setOrgs] = useState<Org[]>([]);
+  const [newOrgName, setNewOrgName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,14 +33,44 @@ export default function Signup() {
       toast({ title: "Passwords don't match", variant: "destructive" });
       return;
     }
-    if (!orgId) {
+
+    let finalOrgId = orgId;
+
+    // If "Other" selected, create new org first
+    if (orgId === "other") {
+      if (!newOrgName.trim()) {
+        toast({ title: "Please enter your organization name", variant: "destructive" });
+        return;
+      }
+      const orgCode = newOrgName
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w-]+/g, "");
+
+      const { data: newOrg, error: orgError } = await supabase
+        .from("organizations")
+        .insert({ org_name: newOrgName.trim(), org_code: orgCode, manager_email: email })
+        .select("id")
+        .single();
+
+      if (orgError || !newOrg) {
+        console.error("Failed to create organization:", orgError);
+        toast({ title: "Failed to create organization", description: orgError?.message, variant: "destructive" });
+        return;
+      }
+      console.log("Created new organization:", newOrg.id, orgCode);
+      finalOrgId = newOrg.id;
+    }
+
+    if (!finalOrgId || finalOrgId === "other") {
       toast({ title: "Please select an organization", variant: "destructive" });
       return;
     }
 
     setLoading(true);
 
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: window.location.origin },
@@ -51,10 +82,12 @@ export default function Signup() {
       return;
     }
 
-    // Insert into managers table to link user to organization
-    const { error: managerError } = await supabase
+    // Insert into managers table
+    const { data: managerRecord, error: managerError } = await supabase
       .from("managers" as any)
-      .insert({ email, organization_id: orgId } as any);
+      .insert({ email, organization_id: finalOrgId } as any)
+      .select("*")
+      .single();
 
     if (managerError) {
       console.error("Failed to create manager record:", managerError);
@@ -63,11 +96,14 @@ export default function Signup() {
       return;
     }
 
+    console.log("Manager record created:", managerRecord);
+    console.log("Manager organization_id saved:", (managerRecord as any)?.organization_id);
+
     // Also update organizations table for RLS compatibility
     await supabase
       .from("organizations")
       .update({ manager_email: email })
-      .eq("id", orgId);
+      .eq("id", finalOrgId);
 
     setLoading(false);
     toast({ title: "Account created!", description: "Please check your email to verify your account, then log in." });
@@ -134,8 +170,22 @@ export default function Signup() {
               {orgs.map((o) => (
                 <option key={o.id} value={o.id}>{o.org_name}</option>
               ))}
+              <option value="other">Other (create new)</option>
             </select>
           </div>
+          {orgId === "other" && (
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-1 block">Enter your organization name</label>
+              <input
+                type="text"
+                value={newOrgName}
+                onChange={(e) => setNewOrgName(e.target.value)}
+                required
+                className="w-full bg-card border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="e.g. Acme Hotel"
+              />
+            </div>
+          )}
           <Button variant="gold" type="submit" disabled={loading} className="w-full text-base">
             {loading ? "Creating account..." : "Sign Up"}
           </Button>

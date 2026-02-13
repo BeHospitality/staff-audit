@@ -65,11 +65,13 @@ export default function PulseDashboard() {
       setUser(session.user);
 
       // Fetch manager's organization via managers table
-      const { data: managerData } = await supabase
+      const { data: managerData, error: managerError } = await supabase
         .from("managers" as any)
         .select("organization_id")
         .eq("email", session.user.email)
         .maybeSingle();
+
+      console.log("Manager lookup result:", managerData, "Error:", managerError);
 
       const orgId = (managerData as any)?.organization_id;
       console.log("Manager organization_id:", orgId);
