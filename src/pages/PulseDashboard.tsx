@@ -1,60 +1,29 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { generateDemoData, EMOJI_LABELS, type PulseResponse } from "@/data/demoData";
-import { exportPDF } from "@/lib/pdfExport";
-import { Activity, Copy, LogOut, Download, MessageCircle, AlertTriangle, Heart, Flame, Clock, ToggleLeft, ToggleRight } from "lucide-react";
+import { Activity, LogOut, Eye, FileText, Copy, ExternalLink, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import OrgDetailView from "@/components/dashboard/OrgDetailView";
+import DossierList from "@/components/dashboard/DossierList";
+import GenerateDossierModal from "@/components/dashboard/GenerateDossierModal";
 
-function avgScore(responses: PulseResponse[], key: keyof PulseResponse): number {
-  const vals = responses.map((r) => r[key] as number).filter((v) => v != null);
-  if (vals.length === 0) return 0;
-  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length / 5) * 100);
-}
-
-function scoreColor(score: number): string {
-  if (score <= 40) return "text-destructive";
-  if (score <= 70) return "text-primary";
-  return "text-success";
-}
-
-function scoreBg(score: number): string {
-  if (score <= 40) return "bg-destructive/10 border-destructive/30";
-  if (score <= 70) return "bg-primary/10 border-primary/30";
-  return "bg-success/10 border-success/30";
-}
-
-function scoreLabel(score: number): string {
-  if (score <= 40) return "Critical";
-  if (score <= 70) return "Moderate Risk";
-  return "Healthy";
-}
-
-function emojiDist(responses: PulseResponse[], key: keyof PulseResponse, labels: string[]) {
-  const counts = [0, 0, 0, 0, 0];
-  let total = 0;
-  responses.forEach((r) => {
-    const v = r[key] as number | null;
-    if (v != null) {
-      counts[v - 1]++;
-      total++;
-    }
-  });
-  return labels.map((label, i) => ({
-    label,
-    count: counts[i],
-    pct: total > 0 ? Math.round((counts[i] / total) * 100) : 0,
-  }));
+interface Org {
+  id: string;
+  org_name: string;
+  org_code: string;
+  responseCount: number;
+  healthScore: number;
+  lastPulseDate: string | null;
 }
 
 export default function PulseDashboard() {
   const [user, setUser] = useState<any>(null);
-  const [org, setOrg] = useState<any>(null);
-  const [responses, setResponses] = useState<PulseResponse[]>([]);
-  const [demoMode, setDemoMode] = useState(false);
-  const [dateFilter, setDateFilter] = useState("all");
+  const [orgs, setOrgs] = useState<Org[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
+  const [showDossiers, setShowDossiers] = useState(false);
+  const [dossierModal, setDossierModal] = useState<{ orgId: string; orgName: string } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -63,65 +32,7 @@ export default function PulseDashboard() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/pulse/login"); return; }
       setUser(session.user);
-      console.log("Logged in user email:", session.user.email);
-
-      // Fetch manager's organization via managers table (use .limit(1).single() to handle duplicates)
-      const { data: managerData, error: managerError } = await supabase
-        .from("managers" as any)
-        .select("organization_id")
-        .eq("email", session.user.email)
-        .limit(1)
-        .single();
-
-      console.log("Manager lookup result:", JSON.stringify(managerData), "Error:", managerError);
-
-      const orgId = (managerData as any)?.organization_id;
-      console.log("Manager organization_id:", orgId);
-
-      if (!orgId) {
-        // Fallback: try organizations.manager_email
-        console.log("No manager record found, trying organizations.manager_email fallback");
-        const { data: orgFallback } = await supabase
-          .from("organizations")
-          .select("*")
-          .eq("manager_email", session.user.email!)
-          .limit(1)
-          .single();
-
-        console.log("Org fallback result:", JSON.stringify(orgFallback));
-
-        if (orgFallback) {
-          setOrg(orgFallback);
-          console.log("Pulse link org_code:", orgFallback.org_code);
-          const { data: resp } = await supabase
-            .from("pulse_responses")
-            .select("*")
-            .eq("organization_id", orgFallback.id)
-            .eq("is_demo_data", false);
-          setResponses((resp as PulseResponse[]) || []);
-        }
-        setLoading(false);
-        return;
-      }
-
-      const { data: orgData } = await supabase
-        .from("organizations")
-        .select("*")
-        .eq("id", orgId)
-        .single();
-
-      console.log("Organization data:", JSON.stringify(orgData));
-
-      if (orgData) {
-        setOrg(orgData);
-        console.log("Pulse link org_code:", orgData.org_code);
-        const { data: resp } = await supabase
-          .from("pulse_responses")
-          .select("*")
-          .eq("organization_id", orgData.id)
-          .eq("is_demo_data", false);
-        setResponses((resp as PulseResponse[]) || []);
-      }
+      await loadOrgs();
       setLoading(false);
     };
     checkAuth();
@@ -132,61 +43,55 @@ export default function PulseDashboard() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const displayResponses = useMemo(() => {
-    if (demoMode) return generateDemoData(org?.id || "demo");
-    let filtered = responses;
-    if (dateFilter === "7") {
-      const d = new Date(); d.setDate(d.getDate() - 7);
-      filtered = responses.filter((r) => new Date(r.submitted_at) >= d);
-    } else if (dateFilter === "30") {
-      const d = new Date(); d.setDate(d.getDate() - 30);
-      filtered = responses.filter((r) => new Date(r.submitted_at) >= d);
-    }
-    return filtered;
-  }, [demoMode, responses, dateFilter, org]);
+  const loadOrgs = async () => {
+    const { data: allOrgs } = await supabase.from("organizations").select("*");
+    if (!allOrgs) return;
 
-  const energy = avgScore(displayResponses, "question_1_energy");
-  const support = avgScore(displayResponses, "question_2_support");
-  const growth = avgScore(displayResponses, "question_3_growth");
-  const spirit = avgScore(displayResponses, "question_4_spirit");
+    const { data: allResponses } = await supabase
+      .from("pulse_responses")
+      .select("organization_id, question_1_energy, question_2_support, question_3_growth, question_4_spirit, submitted_at")
+      .eq("is_demo_data", false);
 
-  const energyDist = emojiDist(displayResponses, "question_1_energy", EMOJI_LABELS.energy);
-  const supportDist = emojiDist(displayResponses, "question_2_support", EMOJI_LABELS.support);
-  const growthDist = emojiDist(displayResponses, "question_3_growth", EMOJI_LABELS.growth);
-  const spiritDist = emojiDist(displayResponses, "question_4_spirit", EMOJI_LABELS.spirit);
+    const orgsWithStats: Org[] = allOrgs.map((o) => {
+      const orgResponses = (allResponses || []).filter((r) => r.organization_id === o.id);
+      const count = orgResponses.length;
+      let healthScore = 0;
+      if (count > 0) {
+        const avg = (key: string) => {
+          const vals = orgResponses.map((r) => (r as any)[key] as number).filter((v) => v != null);
+          return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length / 5 * 100 : 0;
+        };
+        healthScore = Math.round((avg("question_1_energy") + avg("question_2_support") + avg("question_3_growth") + avg("question_4_spirit")) / 4);
+      }
+      const dates = orgResponses.map((r) => r.submitted_at).sort().reverse();
+      return {
+        id: o.id,
+        org_name: o.org_name,
+        org_code: o.org_code,
+        responseCount: count,
+        healthScore,
+        lastPulseDate: dates[0] || null,
+      };
+    });
 
-  const departments = [...new Set(displayResponses.map((r) => r.department).filter(Boolean))] as string[];
-
-  const exhaustedPct = displayResponses.length > 0
-    ? Math.round(displayResponses.filter((r) => r.question_1_energy <= 2).length / displayResponses.length * 100)
-    : 0;
-
-  const feedbacks = displayResponses.map((r) => ({ text: r.open_feedback, dept: r.department, date: r.submitted_at })).filter((f) => f.text);
-  const positiveFeedback = feedbacks.filter((f) => {
-    const t = f.text!.toLowerCase();
-    return t.includes("great") || t.includes("extra mile") || t.includes("exceptional") || t.includes("appreciated") || t.includes("spirit") || t.includes("pull together");
-  });
-  const frictionFeedback = feedbacks.filter((f) => !positiveFeedback.includes(f));
-
-  const surveyLink = org ? `${window.location.origin}/pulse?org=${org.org_code}` : "";
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(surveyLink);
-    toast({ title: "Link copied!" });
-  };
-
-  const handleWhatsApp = () => {
-    const msg = encodeURIComponent(`Hi team, please take 2 mins to complete our pulse survey: ${surveyLink}. Your honest feedback helps us improve.`);
-    window.open(`https://wa.me/?text=${msg}`, "_blank");
-  };
-
-  const handleExport = () => {
-    const range = dateFilter === "7" ? "Last 7 Days" : dateFilter === "30" ? "Last 30 Days" : "All Time";
-    exportPDF(org?.org_name || "Organization", displayResponses, range);
+    setOrgs(orgsWithStats.sort((a, b) => b.responseCount - a.responseCount));
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+  };
+
+  const scoreColor = (score: number) => {
+    if (score <= 40) return "text-destructive";
+    if (score <= 70) return "text-primary";
+    return "text-success";
+  };
+
+  const scoreBadge = (score: number) => {
+    if (score === 0) return { text: "No data", cls: "bg-muted text-muted-foreground" };
+    if (score <= 40) return { text: "Critical", cls: "bg-destructive/20 text-destructive" };
+    if (score <= 70) return { text: "Moderate", cls: "bg-primary/20 text-primary" };
+    return { text: "Healthy", cls: "bg-success/20 text-success" };
   };
 
   if (loading) {
@@ -197,36 +102,36 @@ export default function PulseDashboard() {
     );
   }
 
-  if (!org && !demoMode) {
+  if (selectedOrg) {
+    const org = orgs.find((o) => o.id === selectedOrg);
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="text-center space-y-4">
-          <AlertTriangle className="w-12 h-12 text-destructive mx-auto" />
-          <h2 className="text-xl font-bold">No organization assigned to this account</h2>
-          <p className="text-muted-foreground">Please contact support or sign up with an organization.</p>
-          <Button variant="outline" onClick={handleLogout}>Sign Out</Button>
-        </div>
-      </div>
+      <OrgDetailView
+        orgId={selectedOrg}
+        orgName={org?.org_name || ""}
+        orgCode={org?.org_code || ""}
+        onBack={() => setSelectedOrg(null)}
+        onGenerateDossier={() => setDossierModal({ orgId: selectedOrg, orgName: org?.org_name || "" })}
+      />
     );
   }
 
   return (
     <div className="min-h-screen">
-      {/* Top Nav */}
       <nav className="border-b border-border px-4 md:px-8 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Activity className="w-5 h-5 text-primary" />
           <span className="font-bold text-primary text-sm">Be Connect</span>
-          {org && <span className="text-muted-foreground text-sm hidden md:inline">| {org.org_name}</span>}
+          <span className="text-muted-foreground text-sm hidden md:inline">| Command Centre</span>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setDemoMode(!demoMode)}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          <Button
+            variant={showDossiers ? "gold" : "outline"}
+            size="sm"
+            onClick={() => setShowDossiers(!showDossiers)}
           >
-            {demoMode ? <ToggleRight className="w-5 h-5 text-primary" /> : <ToggleLeft className="w-5 h-5" />}
-            Demo
-          </button>
+            <FileText className="w-4 h-4 mr-1" />
+            {showDossiers ? "View Orgs" : "View Dossiers"}
+          </Button>
           <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="w-4 h-4" />
           </Button>
@@ -234,225 +139,59 @@ export default function PulseDashboard() {
       </nav>
 
       <main className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">{org?.org_name || "Organization"} Team Pulse</h1>
-            <p className="text-muted-foreground text-sm mt-1">Employee sentiment & churn risk analysis</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground"
-            >
-              <option value="7">Last 7 Days</option>
-              <option value="30">Last 30 Days</option>
-              <option value="all">All Time</option>
-            </select>
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="w-4 h-4 mr-1" /> Export PDF
-            </Button>
-          </div>
-        </div>
-
-        {/* Stability Warning */}
-        {exhaustedPct >= 40 && (
-          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-start gap-3 animate-fade-in">
-            <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
+        {showDossiers ? (
+          <DossierList />
+        ) : (
+          <>
             <div>
-              <p className="font-bold text-destructive">STABILITY WARNING DETECTED</p>
-              <p className="text-sm text-foreground mt-1">
-                High Friction Detected at this Property. Over <strong>{exhaustedPct}%</strong> of the team reports 'Struggling' (😫😓). Immediate intervention is recommended to prevent turnover.
-              </p>
+              <h1 className="text-2xl md:text-3xl font-bold">All Organizations</h1>
+              <p className="text-muted-foreground text-sm mt-1">{orgs.length} organizations tracked</p>
             </div>
-          </div>
-        )}
 
-        {/* Top Row: Deployment Hub + Response Counter */}
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Deployment Hub */}
-          <div className="bg-primary/10 border border-primary/30 rounded-lg p-5">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">📤</span>
-              <h3 className="font-bold">Share Your Team Link</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">Send this link to your team to reach the 20-response milestone for full analysis.</p>
-            <div className="flex gap-2 mb-3">
-              <input
-                readOnly
-                value={surveyLink}
-                className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-xs text-foreground"
-              />
-              <Button variant="gold" size="sm" onClick={handleCopy}>
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleWhatsApp} className="w-full">
-              <MessageCircle className="w-4 h-4 mr-1" /> Share via WhatsApp
-            </Button>
-          </div>
-
-          {/* Response Counter */}
-          <div className="bg-card border border-border rounded-lg p-5">
-            <h3 className="font-bold mb-2">Intelligence Loop</h3>
-            <p className="text-3xl font-bold text-primary">{displayResponses.length}</p>
-            <p className="text-sm text-muted-foreground">Employee Responses Collected</p>
-            <div className="mt-3">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>Gathering Data</span>
-                <span>Milestone: {Math.min(displayResponses.length, 20)}/20</span>
-              </div>
-              <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min((displayResponses.length / 20) * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {displayResponses.length >= 20
-                  ? "✓ Full analysis unlocked"
-                  : `Need ${20 - displayResponses.length} more responses for full sentiment analysis`}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Sentiment Snapshot */}
-        <div>
-          <h2 className="text-lg font-bold mb-4">Sentiment Snapshot</h2>
-          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {[
-              { title: "Team Energy", score: energy, dist: energyDist },
-              { title: "Management Support", score: support, dist: supportDist },
-              { title: "Growth Potential", score: growth, dist: growthDist },
-              { title: "Team Spirit", score: spirit, dist: spiritDist },
-            ].map((card) => (
-              <div key={card.title} className={`rounded-lg border p-4 ${scoreBg(card.score)}`}>
-                <h3 className="text-sm font-bold mb-3">{card.title}</h3>
-                <div className="space-y-1.5 mb-3">
-                  {card.dist.map((d) => (
-                    <div key={d.label} className="flex items-center gap-2 text-xs">
-                      <span className="w-24 truncate">{d.label}</span>
-                      <div className="flex-1 h-3 bg-secondary/50 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-foreground/30 rounded-full"
-                          style={{ width: `${d.pct}%` }}
-                        />
+            <div className="grid gap-4">
+              {orgs.map((org) => {
+                const badge = scoreBadge(org.healthScore);
+                return (
+                  <div key={org.id} className="bg-card border border-border rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="font-bold text-lg">{org.org_name}</h3>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.cls}`}>{badge.text}</span>
                       </div>
-                      <span className="w-8 text-right text-muted-foreground">{d.pct}%</span>
+                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                        <span>{org.responseCount} responses</span>
+                        {org.healthScore > 0 && (
+                          <span className={scoreColor(org.healthScore)}>Health: {org.healthScore}/100</span>
+                        )}
+                        {org.lastPulseDate && (
+                          <span>Last pulse: {new Date(org.lastPulseDate).toLocaleDateString()}</span>
+                        )}
+                        <span className="text-xs">Link: /pulse?org={org.org_code}</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className={`text-2xl font-bold ${scoreColor(card.score)}`}>{card.score}</span>
-                  <span className="text-sm text-muted-foreground">/100</span>
-                  <span className={`text-xs ml-auto font-medium ${scoreColor(card.score)}`}>({scoreLabel(card.score)})</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Department Breakdown */}
-        {departments.length > 0 && (
-          <div>
-            <h2 className="text-lg font-bold mb-4">Department Breakdown</h2>
-            <div className="bg-card border border-border rounded-lg overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-muted-foreground">
-                    <th className="text-left p-3 font-medium">Department</th>
-                    <th className="text-center p-3 font-medium">Responses</th>
-                    <th className="text-center p-3 font-medium">Energy</th>
-                    <th className="text-center p-3 font-medium">Support</th>
-                    <th className="text-center p-3 font-medium">Growth</th>
-                    <th className="text-center p-3 font-medium">Overall</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {departments.map((dept) => {
-                    const dr = displayResponses.filter((r) => r.department === dept);
-                    const de = avgScore(dr, "question_1_energy");
-                    const ds = avgScore(dr, "question_2_support");
-                    const dg = avgScore(dr, "question_3_growth");
-                    const overall = Math.round((de + ds + dg) / 3);
-                    return (
-                      <tr key={dept} className="border-b border-border/50">
-                        <td className="p-3 font-medium">{dept}</td>
-                        <td className="p-3 text-center">{dr.length}</td>
-                        <td className={`p-3 text-center font-medium ${scoreColor(de)}`}>{de}/100</td>
-                        <td className={`p-3 text-center font-medium ${scoreColor(ds)}`}>{ds}/100</td>
-                        <td className={`p-3 text-center font-medium ${scoreColor(dg)}`}>{dg}/100</td>
-                        <td className={`p-3 text-center font-bold ${scoreColor(overall)}`}>{overall}/100</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setSelectedOrg(org.id)}>
+                        <Eye className="w-4 h-4 mr-1" /> View Responses
+                      </Button>
+                      <Button variant="gold" size="sm" onClick={() => setDossierModal({ orgId: org.id, orgName: org.org_name })}>
+                        <FileText className="w-4 h-4 mr-1" /> Generate Dossier
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          </>
         )}
-
-        {/* Positive Highlights + Friction Feed */}
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Positive */}
-          <div className="bg-card border border-success/30 rounded-lg p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Heart className="w-4 h-4 text-success" />
-              <h3 className="font-bold">What's Working Well</h3>
-            </div>
-            {positiveFeedback.length > 0 ? (
-              <div className="space-y-3">
-                {positiveFeedback.slice(0, 5).map((f, i) => (
-                  <div key={i} className="text-sm border-l-2 border-success/40 pl-3">
-                    <p className="text-foreground">"{f.text}"</p>
-                    <p className="text-xs text-muted-foreground mt-1">— {f.dept || "Anonymous"}, {new Date(f.date).toLocaleDateString()}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No positive feedback yet.</p>
-            )}
-          </div>
-
-          {/* Friction Feed */}
-          <div className="bg-card border border-destructive/30 rounded-lg p-5">
-            <div className="flex items-center gap-2 mb-1">
-              <Flame className="w-4 h-4 text-destructive" />
-              <h3 className="font-bold">Radical Candor: Friction Feed</h3>
-            </div>
-            <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
-              <span className="bg-destructive/20 text-destructive text-[10px] px-1.5 py-0.5 rounded font-medium">Manager Eyes Only</span>
-            </p>
-            {frictionFeedback.length > 0 ? (
-              <div className="space-y-3">
-                {frictionFeedback.slice(0, 5).map((f, i) => (
-                  <div key={i} className="text-sm border-l-2 border-destructive/40 pl-3">
-                    <p className="text-foreground">"{f.text}"</p>
-                    <p className="text-xs text-muted-foreground mt-1">— {f.dept || "Anonymous"}, {new Date(f.date).toLocaleDateString()}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No friction points reported.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Efficiency Metric */}
-        <div className="bg-card border border-border rounded-lg p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Clock className="w-8 h-8 text-primary" />
-            <div>
-              <h3 className="font-bold">Efficiency Metric</h3>
-              <p className="text-sm text-muted-foreground">Est. Manual Admin: <strong className="text-foreground">3-5 Hours/Week</strong></p>
-              <p className="text-xs text-muted-foreground">Automated in Be Connect App.</p>
-            </div>
-          </div>
-          <Button variant="gold" size="sm">Apply for Charter Selection</Button>
-        </div>
       </main>
+
+      {dossierModal && (
+        <GenerateDossierModal
+          orgId={dossierModal.orgId}
+          orgName={dossierModal.orgName}
+          onClose={() => { setDossierModal(null); loadOrgs(); }}
+        />
+      )}
     </div>
   );
 }

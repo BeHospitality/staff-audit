@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Activity } from "lucide-react";
@@ -64,9 +64,8 @@ export default function Login() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          Don't have an account?{" "}
-          <Link to="/pulse/signup" className="text-primary hover:underline">Sign Up</Link>
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          Be Connect Staff Only
         </p>
       </div>
     </div>
