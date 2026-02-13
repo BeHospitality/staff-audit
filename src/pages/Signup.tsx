@@ -82,22 +82,33 @@ export default function Signup() {
       return;
     }
 
-    // Insert into managers table
-    const { data: managerRecord, error: managerError } = await supabase
+    // Check if manager record already exists to prevent duplicates
+    const { data: existingManager } = await supabase
       .from("managers" as any)
-      .insert({ email, organization_id: finalOrgId } as any)
-      .select("*")
-      .single();
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
 
-    if (managerError) {
-      console.error("Failed to create manager record:", managerError);
-      toast({ title: "Could not link organization", description: managerError.message, variant: "destructive" });
-      setLoading(false);
-      return;
+    if (existingManager) {
+      console.log("Manager record already exists:", existingManager);
+    } else {
+      // Insert into managers table
+      const { data: managerRecord, error: managerError } = await supabase
+        .from("managers" as any)
+        .insert({ email, organization_id: finalOrgId } as any)
+        .select("*")
+        .single();
+
+      if (managerError) {
+        console.error("Failed to create manager record:", managerError);
+        toast({ title: "Could not link organization", description: managerError.message, variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      console.log("Manager record created:", JSON.stringify(managerRecord));
+      console.log("Manager organization_id saved:", (managerRecord as any)?.organization_id);
     }
-
-    console.log("Manager record created:", managerRecord);
-    console.log("Manager organization_id saved:", (managerRecord as any)?.organization_id);
 
     // Also update organizations table for RLS compatibility
     await supabase
