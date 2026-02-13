@@ -67,6 +67,53 @@ export type Database = {
         }
         Relationships: []
       }
+      pulse_dossiers: {
+        Row: {
+          client_response: string | null
+          created_at: string
+          first_viewed_at: string | null
+          id: string
+          last_viewed_at: string | null
+          organization_id: string
+          pin_code: string
+          status: string
+          unique_code: string
+          view_count: number
+        }
+        Insert: {
+          client_response?: string | null
+          created_at?: string
+          first_viewed_at?: string | null
+          id?: string
+          last_viewed_at?: string | null
+          organization_id: string
+          pin_code: string
+          status?: string
+          unique_code: string
+          view_count?: number
+        }
+        Update: {
+          client_response?: string | null
+          created_at?: string
+          first_viewed_at?: string | null
+          id?: string
+          last_viewed_at?: string | null
+          organization_id?: string
+          pin_code?: string
+          status?: string
+          unique_code?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_dossiers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pulse_responses: {
         Row: {
           department: string | null
