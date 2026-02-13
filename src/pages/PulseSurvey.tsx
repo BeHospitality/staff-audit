@@ -21,7 +21,24 @@ export default function PulseSurvey() {
   const [department, setDepartment] = useState("");
   const [feedback, setFeedback] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Check localStorage for recent submission
+  useEffect(() => {
+    const key = `pulse_submitted_${orgCode}`;
+    const timestamp = localStorage.getItem(key);
+    if (timestamp) {
+      const submitted = new Date(timestamp);
+      const now = new Date();
+      const daysDiff = (now.getTime() - submitted.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysDiff < 7) {
+        setAlreadySubmitted(true);
+      } else {
+        localStorage.removeItem(key);
+      }
+    }
+  }, [orgCode]);
 
   useEffect(() => {
     supabase
@@ -51,28 +68,34 @@ export default function PulseSurvey() {
     });
     setLoading(false);
     setSubmitted(true);
+    localStorage.setItem(`pulse_submitted_${orgCode}`, new Date().toISOString());
   };
 
-  if (submitted) {
-    const surveyUrl = `/pulse?org=${orgCode}`;
+  if (alreadySubmitted) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="text-center animate-fade-in max-w-md">
           <CheckCircle2 className="w-16 h-16 text-success mx-auto mb-4" />
-          <h1 className="text-3xl font-bold mb-3">Thank You!</h1>
-          <p className="text-muted-foreground text-lg mb-6">Your feedback helps build a better workplace. Your responses are completely anonymous.</p>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setAnswers({});
-              setDepartment("");
-              setFeedback("");
-              setSubmitted(false);
-            }}
-          >
-            Submit Another Response
-          </Button>
-          <p className="text-xs text-muted-foreground mt-4">✓ You can close this page now</p>
+          <h1 className="text-2xl font-bold mb-3">You've already submitted your pulse for this period.</h1>
+          <p className="text-muted-foreground">Thank you! Your feedback is being reviewed.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center animate-fade-in max-w-md">
+          <CheckCircle2 className="w-16 h-16 text-success mx-auto mb-4" />
+          <h1 className="text-3xl font-bold mb-4">Thank You!</h1>
+          <p className="text-muted-foreground text-lg mb-4">
+            Your feedback is incredibly valuable to us. Thank you for taking the time to share your honest thoughts — it helps us build a better workplace for everyone.
+          </p>
+          <p className="text-muted-foreground mb-6">
+            Your responses are completely anonymous and will be used to improve our team culture.
+          </p>
+          <p className="text-sm text-muted-foreground font-medium">✓ You can close this page now.</p>
         </div>
       </div>
     );
