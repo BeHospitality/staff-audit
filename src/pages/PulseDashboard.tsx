@@ -63,26 +63,32 @@ export default function PulseDashboard() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/pulse/login"); return; }
       setUser(session.user);
+      console.log("Logged in user email:", session.user.email);
 
-      // Fetch manager's organization via managers table
+      // Fetch manager's organization via managers table (use .limit(1).single() to handle duplicates)
       const { data: managerData, error: managerError } = await supabase
         .from("managers" as any)
         .select("organization_id")
         .eq("email", session.user.email)
-        .maybeSingle();
+        .limit(1)
+        .single();
 
-      console.log("Manager lookup result:", managerData, "Error:", managerError);
+      console.log("Manager lookup result:", JSON.stringify(managerData), "Error:", managerError);
 
       const orgId = (managerData as any)?.organization_id;
       console.log("Manager organization_id:", orgId);
 
       if (!orgId) {
         // Fallback: try organizations.manager_email
+        console.log("No manager record found, trying organizations.manager_email fallback");
         const { data: orgFallback } = await supabase
           .from("organizations")
           .select("*")
           .eq("manager_email", session.user.email!)
-          .maybeSingle();
+          .limit(1)
+          .single();
+
+        console.log("Org fallback result:", JSON.stringify(orgFallback));
 
         if (orgFallback) {
           setOrg(orgFallback);
@@ -102,7 +108,9 @@ export default function PulseDashboard() {
         .from("organizations")
         .select("*")
         .eq("id", orgId)
-        .maybeSingle();
+        .single();
+
+      console.log("Organization data:", JSON.stringify(orgData));
 
       if (orgData) {
         setOrg(orgData);
