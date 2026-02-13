@@ -54,12 +54,25 @@ export default function PulseSurvey() {
   };
 
   if (submitted) {
+    const surveyUrl = `/pulse?org=${orgCode}`;
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="text-center animate-fade-in max-w-md">
           <CheckCircle2 className="w-16 h-16 text-success mx-auto mb-4" />
           <h1 className="text-3xl font-bold mb-3">Thank You!</h1>
-          <p className="text-muted-foreground text-lg">Your feedback helps build a better workplace. Your responses are completely anonymous.</p>
+          <p className="text-muted-foreground text-lg mb-6">Your feedback helps build a better workplace. Your responses are completely anonymous.</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setAnswers({});
+              setDepartment("");
+              setFeedback("");
+              setSubmitted(false);
+            }}
+          >
+            Submit Another Response
+          </Button>
+          <p className="text-xs text-muted-foreground mt-4">✓ You can close this page now</p>
         </div>
       </div>
     );
