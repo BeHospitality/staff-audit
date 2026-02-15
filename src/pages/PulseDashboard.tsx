@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import OrgDetailView from "@/components/dashboard/OrgDetailView";
 import DossierList from "@/components/dashboard/DossierList";
 import GenerateDossierModal from "@/components/dashboard/GenerateDossierModal";
+import WelcomeModal from "@/components/dashboard/WelcomeModal";
 
 interface Org {
   id: string;
@@ -24,6 +25,7 @@ export default function PulseDashboard() {
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const [showDossiers, setShowDossiers] = useState(false);
   const [dossierModal, setDossierModal] = useState<{ orgId: string; orgName: string } | null>(null);
+  const [welcomeData, setWelcomeData] = useState<{ orgName: string; pulseLink: string } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -34,6 +36,13 @@ export default function PulseDashboard() {
       setUser(session.user);
       await loadOrgs();
       setLoading(false);
+
+      // Check for welcome modal data
+      const raw = sessionStorage.getItem("welcome_data");
+      if (raw) {
+        setWelcomeData(JSON.parse(raw));
+        sessionStorage.removeItem("welcome_data");
+      }
     };
     checkAuth();
 
@@ -190,6 +199,13 @@ export default function PulseDashboard() {
           orgId={dossierModal.orgId}
           orgName={dossierModal.orgName}
           onClose={() => { setDossierModal(null); loadOrgs(); }}
+        />
+      )}
+      {welcomeData && (
+        <WelcomeModal
+          orgName={welcomeData.orgName}
+          pulseLink={welcomeData.pulseLink}
+          onClose={() => setWelcomeData(null)}
         />
       )}
     </div>
