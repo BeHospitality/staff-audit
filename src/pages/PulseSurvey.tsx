@@ -46,10 +46,13 @@ export default function PulseSurvey() {
       .select("id, org_name")
       .eq("org_code", orgCode)
       .single()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (data) {
           setOrgName(data.org_name);
           setOrgId(data.id);
+        } else {
+          setOrgName("");
+          setOrgId("");
         }
       });
   }, [orgCode]);
@@ -96,6 +99,19 @@ export default function PulseSurvey() {
             Your responses are completely anonymous and will be used to improve our team culture.
           </p>
           <p className="text-sm text-muted-foreground font-medium">✓ You can close this page now.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Invalid org link
+  if (!orgId && orgCode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center animate-fade-in max-w-md">
+          <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-3">Invalid Pulse Link</h1>
+          <p className="text-muted-foreground">This survey link doesn't match any organization. Please check the link and try again.</p>
         </div>
       </div>
     );

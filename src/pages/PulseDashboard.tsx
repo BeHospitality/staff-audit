@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Activity, LogOut, Eye, FileText, Copy, ExternalLink, MessageCircle, Shield } from "lucide-react";
+import { Activity, LogOut, Eye, FileText, Shield, ToggleLeft, ToggleRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import OrgDetailView from "@/components/dashboard/OrgDetailView";
 import DossierList from "@/components/dashboard/DossierList";
@@ -27,8 +27,16 @@ export default function PulseDashboard() {
   const [dossierModal, setDossierModal] = useState<{ orgId: string; orgName: string } | null>(null);
   const [welcomeData, setWelcomeData] = useState<{ orgName: string; pulseLink: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [demoMode, setDemoMode] = useState(() => localStorage.getItem("beconnect_demo_mode") === "true");
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const toggleDemo = () => {
+    const next = !demoMode;
+    setDemoMode(next);
+    localStorage.setItem("beconnect_demo_mode", String(next));
+    toast({ title: next ? "Demo Mode ON" : "Demo Mode OFF", description: next ? "Showing sample data for presentations" : "Showing real data" });
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -38,12 +46,10 @@ export default function PulseDashboard() {
       await loadOrgs();
       setLoading(false);
 
-      // Check admin status
       supabase.functions.invoke("check-admin").then(({ data }) => {
         if (data?.is_admin) setIsAdmin(true);
       });
 
-      // Check for welcome modal data
       const raw = sessionStorage.getItem("welcome_data");
       if (raw) {
         setWelcomeData(JSON.parse(raw));
@@ -92,9 +98,7 @@ export default function PulseDashboard() {
     setOrgs(orgsWithStats.sort((a, b) => b.responseCount - a.responseCount));
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
+  const handleLogout = async () => { await supabase.auth.signOut(); };
 
   const scoreColor = (score: number) => {
     if (score <= 40) return "text-destructive";
@@ -120,13 +124,23 @@ export default function PulseDashboard() {
   if (selectedOrg) {
     const org = orgs.find((o) => o.id === selectedOrg);
     return (
-      <OrgDetailView
-        orgId={selectedOrg}
-        orgName={org?.org_name || ""}
-        orgCode={org?.org_code || ""}
-        onBack={() => setSelectedOrg(null)}
-        onGenerateDossier={() => setDossierModal({ orgId: selectedOrg, orgName: org?.org_name || "" })}
-      />
+      <>
+        <OrgDetailView
+          orgId={selectedOrg}
+          orgName={org?.org_name || ""}
+          orgCode={org?.org_code || ""}
+          onBack={() => setSelectedOrg(null)}
+          onGenerateDossier={() => setDossierModal({ orgId: selectedOrg, orgName: org?.org_name || "" })}
+          demoMode={demoMode}
+        />
+        {dossierModal && (
+          <GenerateDossierModal
+            orgId={dossierModal.orgId}
+            orgName={dossierModal.orgName}
+            onClose={() => { setDossierModal(null); loadOrgs(); }}
+          />
+        )}
+      </>
     );
   }
 
@@ -139,18 +153,31 @@ export default function PulseDashboard() {
           <span className="text-muted-foreground text-sm hidden md:inline">| Command Centre</span>
         </div>
         <div className="flex items-center gap-3">
+          {/* Demo Mode Toggle */}
+          <button
+            onClick={toggleDemo}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all duration-200 ${
+              demoMode
+                ? "bg-primary/20 border-primary/40 text-primary"
+                : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {demoMode ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+            Demo
+          </button>
           {isAdmin && (
-            <Button variant="outline" size="sm" onClick={() => navigate("/pulse/admin")}>
-              <Shield className="w-4 h-4 mr-1" /> Admin View
+            <Button variant="outline" size="sm" onClick={() => navigate("/pulse/admin")} className="hover-scale">
+              <Shield className="w-4 h-4 mr-1" /> Admin
             </Button>
           )}
           <Button
             variant={showDossiers ? "gold" : "outline"}
             size="sm"
             onClick={() => setShowDossiers(!showDossiers)}
+            className="hover-scale"
           >
             <FileText className="w-4 h-4 mr-1" />
-            {showDossiers ? "View Orgs" : "View Dossiers"}
+            {showDossiers ? "Orgs" : "Dossiers"}
           </Button>
           <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="w-4 h-4" />
@@ -163,38 +190,50 @@ export default function PulseDashboard() {
           <DossierList />
         ) : (
           <>
-            <div>
+            <div className="animate-fade-in">
               <h1 className="text-2xl md:text-3xl font-bold">All Organizations</h1>
               <p className="text-muted-foreground text-sm mt-1">{orgs.length} organizations tracked</p>
             </div>
 
+            {orgs.length === 0 && (
+              <div className="bg-card border border-border rounded-lg p-12 text-center animate-fade-in">
+                <p className="text-lg font-medium mb-2">No organizations yet</p>
+                <p className="text-muted-foreground text-sm">Organizations will appear here once they sign up.</p>
+              </div>
+            )}
+
             <div className="grid gap-4">
-              {orgs.map((org) => {
-                const badge = scoreBadge(org.healthScore);
+              {orgs.map((org, i) => {
+                const badge = scoreBadge(demoMode ? 52 : org.healthScore);
                 return (
-                  <div key={org.id} className="bg-card border border-border rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex-1">
+                  <div
+                    key={org.id}
+                    className="bg-card border border-border rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-200 hover:border-primary/30 animate-fade-in"
+                    style={{ animationDelay: `${i * 0.05}s` }}
+                  >
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-bold text-lg">{org.org_name}</h3>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.cls}`}>{badge.text}</span>
+                        <h3 className="font-bold text-lg truncate">{org.org_name}</h3>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${badge.cls}`}>{badge.text}</span>
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                        <span>{org.responseCount} responses</span>
-                        {org.healthScore > 0 && (
-                          <span className={scoreColor(org.healthScore)}>Health: {org.healthScore}/100</span>
+                        <span>{demoMode ? "19" : org.responseCount} responses</span>
+                        {(demoMode || org.healthScore > 0) && (
+                          <span className={scoreColor(demoMode ? 52 : org.healthScore)}>
+                            Health: {demoMode ? "52" : org.healthScore}/100
+                          </span>
                         )}
                         {org.lastPulseDate && (
                           <span>Last pulse: {new Date(org.lastPulseDate).toLocaleDateString()}</span>
                         )}
-                        <span className="text-xs">Link: /pulse?org={org.org_code}</span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setSelectedOrg(org.id)}>
-                        <Eye className="w-4 h-4 mr-1" /> View Responses
+                    <div className="flex gap-2 shrink-0">
+                      <Button variant="outline" size="sm" onClick={() => setSelectedOrg(org.id)} className="hover-scale">
+                        <Eye className="w-4 h-4 mr-1" /> View
                       </Button>
-                      <Button variant="gold" size="sm" onClick={() => setDossierModal({ orgId: org.id, orgName: org.org_name })}>
-                        <FileText className="w-4 h-4 mr-1" /> Generate Dossier
+                      <Button variant="gold" size="sm" onClick={() => setDossierModal({ orgId: org.id, orgName: org.org_name })} className="hover-scale">
+                        <FileText className="w-4 h-4 mr-1" /> Dossier
                       </Button>
                     </div>
                   </div>
