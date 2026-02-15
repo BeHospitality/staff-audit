@@ -76,7 +76,7 @@ export default function Signup() {
       if (managerError) throw managerError;
 
       // Store welcome data for the modal
-      const pulseLink = `${window.location.origin}/pulse?org=${orgCode}`;
+      const pulseLink = `${window.location.origin}/pulse/survey?org=${orgCode}`;
       sessionStorage.setItem(
         "welcome_data",
         JSON.stringify({ orgName, pulseLink, orgCode })
