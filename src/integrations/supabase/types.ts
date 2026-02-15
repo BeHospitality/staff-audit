@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      dossier_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          dossier_id: string
+          id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          dossier_id: string
+          id?: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          dossier_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dossier_actions_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "pulse_dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       managers: {
         Row: {
           created_at: string
