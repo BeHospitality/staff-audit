@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import ChurnCalculator from "./pages/ChurnCalculator";
 import PulseSurvey from "./pages/PulseSurvey";
 import PulseDashboard from "./pages/PulseDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -20,8 +21,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/pulse?org=kilkea-castle" replace />} />
-          <Route path="/pulse" element={<PulseSurvey />} />
+          <Route path="/" element={<Navigate to="/pulse" replace />} />
+          <Route path="/pulse" element={<ChurnCalculator />} />
+          <Route path="/pulse/survey" element={<PulseSurvey />} />
           <Route path="/pulse/login" element={<Login />} />
           <Route path="/pulse/signup" element={<Signup />} />
           <Route path="/pulse/dashboard" element={<PulseDashboard />} />
