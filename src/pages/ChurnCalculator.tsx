@@ -1,9 +1,11 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Activity, ChevronDown, ChevronUp, TrendingDown, Users, Clock, DollarSign, Target } from "lucide-react";
+import { Activity, ChevronDown, ChevronUp, TrendingDown, Users, Clock, DollarSign, Target, Cog, Crosshair, RefreshCw, ClipboardList, BarChart3, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 function formatCurrency(val: number) {
   return "€" + val.toLocaleString("en-IE", { maximumFractionDigits: 0 });
@@ -50,7 +52,7 @@ export default function ChurnCalculator() {
   const scoreBadge = calc.stabilityScore <= 40 ? "Critical Alert" : calc.stabilityScore <= 70 ? "Moderate Risk" : "Stabilization Recommended";
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(135deg, hsl(216 100% 16%) 0%, hsl(216 80% 12%) 50%, hsl(0 0% 10%) 100%)" }}>
+    <div className="min-h-screen bg-background">
       {/* Navbar */}
       <nav className="px-4 md:px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -63,142 +65,164 @@ export default function ChurnCalculator() {
       </nav>
 
       {/* Hero */}
-      <section className="text-center px-4 pt-8 pb-6 md:pt-16 md:pb-10 max-w-4xl mx-auto animate-fade-in">
+      <section className="text-center px-4 pt-8 pb-6 md:pt-12 md:pb-8 max-w-4xl mx-auto animate-fade-in">
         <h1 className="text-3xl md:text-5xl font-bold text-foreground leading-tight mb-4">
           Identify Your Hidden<br />
           <span className="text-primary">Operational Churn Tax</span>
         </h1>
         <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-          Turnover isn't just HR friction—it's a direct leak on your bottom line. Use the sliders below to calculate the fiscal impact.
+          Turnover isn't just HR friction—it's a direct leak on your bottom line.
         </p>
       </section>
 
-      {/* Calculator */}
-      <section className="max-w-6xl mx-auto px-4 pb-8 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-        <Card className="border-primary/30 bg-card/80 backdrop-blur-sm shadow-2xl shadow-primary/5">
-          <CardContent className="p-6 md:p-10">
-            <div className="grid lg:grid-cols-5 gap-8 lg:gap-12">
-              {/* Sliders - Left */}
-              <div className="lg:col-span-3 space-y-7">
-                <SliderInput
-                  label="Team Capacity"
-                  icon={<Users className="w-4 h-4" />}
-                  value={teamCapacity}
-                  onChange={setTeamCapacity}
-                  min={10} max={1000} step={5}
-                  display={`${teamCapacity} Staff`}
-                />
-                <SliderInput
-                  label="Churn Velocity — Annual Turnover Rate"
-                  icon={<TrendingDown className="w-4 h-4" />}
-                  value={churnVelocity}
-                  onChange={setChurnVelocity}
-                  min={5} max={200} step={1}
-                  display={`${churnVelocity}%`}
-                />
-                <SliderInput
-                  label="Base Monthly Compensation"
-                  icon={<DollarSign className="w-4 h-4" />}
-                  value={baseSalary}
-                  onChange={setBaseSalary}
-                  min={1500} max={10000} step={100}
-                  display={formatCurrency(baseSalary)}
-                />
-                <SliderInput
-                  label="Ramp-Up (Months)"
-                  icon={<Clock className="w-4 h-4" />}
-                  value={rampMonths}
-                  onChange={setRampMonths}
-                  min={1} max={12} step={1}
-                  display={`${rampMonths} Mo`}
-                />
-                <SliderInput
-                  label="Acquisition Friction (Cost/Hire)"
-                  icon={<Target className="w-4 h-4" />}
-                  value={acqFriction}
-                  onChange={setAcqFriction}
-                  min={500} max={10000} step={100}
-                  display={formatCurrency(acqFriction)}
-                />
-              </div>
+      {/* Tabs */}
+      <section className="max-w-6xl mx-auto px-4 pb-16">
+        <Tabs defaultValue="diagnostic" className="w-full">
+          <TabsList className="w-full max-w-md mx-auto mb-8 bg-secondary/60 h-12">
+            <TabsTrigger value="diagnostic" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm font-semibold">
+              Diagnostic
+            </TabsTrigger>
+            <TabsTrigger value="mastery" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm font-semibold">
+              Mastery
+            </TabsTrigger>
+            <TabsTrigger value="toolbox" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm font-semibold">
+              DIY Toolbox
+            </TabsTrigger>
+          </TabsList>
 
-              {/* Results - Right */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Stability Score */}
-                <div className={`rounded-xl p-6 text-center ${scoreBg}`}>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Stability Score</p>
-                  <p className={`text-6xl md:text-7xl font-bold ${scoreColor}`}>{calc.stabilityScore}</p>
-                  <p className="text-muted-foreground text-sm mt-1">/ 100</p>
-                  <span className={`inline-block mt-3 text-xs font-semibold px-3 py-1 rounded-full ${scoreBg} ${scoreColor}`}>
-                    {scoreBadge}
-                  </span>
-                </div>
-
-                {/* Daily Bleed */}
-                <div className="bg-destructive/10 rounded-xl p-5 text-center">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Daily Bleed</p>
-                  <p className="text-2xl md:text-3xl font-bold text-destructive">
-                    - {formatCurrency(Math.round(calc.dailyBleed))} / DAY
-                  </p>
-                </div>
-
-                {/* Annual Churn Tax */}
-                <div className="bg-primary/10 rounded-xl p-6 text-center border border-primary/20">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Annual Churn Tax</p>
-                  <p className="text-4xl md:text-5xl font-bold text-primary">
-                    {formatCurrency(Math.round(calc.totalAnnual))}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                    Based on your {calc.departures} departures and an average salary of {formatCurrency(calc.annualSalary)}, your property is losing {formatCurrency(Math.round(calc.totalAnnual))} annually.
-                  </p>
-                </div>
-
-                {/* Breakdown Accordion */}
-                <button
-                  onClick={() => setShowBreakdown(!showBreakdown)}
-                  className="w-full flex items-center justify-center gap-2 text-sm text-primary font-semibold hover:underline transition-colors"
-                >
-                  {showBreakdown ? "Hide" : "View"} Forensic Breakdown
-                  {showBreakdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </button>
-                {showBreakdown && (
-                  <div className="space-y-3 animate-fade-in">
-                    <BreakdownRow label="Recruitment & Admin" pct={Math.round(calc.recruitPct * 100)} amount={calc.recruitmentCost} />
-                    <BreakdownRow label="Training & Ramp-up" pct={Math.round(calc.trainPct * 100)} amount={calc.trainingCost} />
-                    <BreakdownRow label="Productivity Gap" pct={Math.round(calc.prodPct * 100)} amount={calc.productivityGap} />
+          {/* ───── TAB 1: DIAGNOSTIC ───── */}
+          <TabsContent value="diagnostic" className="animate-fade-in">
+            <Card className="border-primary/30 bg-card/80 backdrop-blur-sm shadow-2xl shadow-primary/5">
+              <CardContent className="p-6 md:p-10">
+                <div className="grid lg:grid-cols-5 gap-8 lg:gap-12">
+                  {/* Sliders */}
+                  <div className="lg:col-span-3 space-y-7">
+                    <SliderInput label="Team Capacity" icon={<Users className="w-4 h-4" />} value={teamCapacity} onChange={setTeamCapacity} min={10} max={1000} step={5} display={`${teamCapacity} Staff`} />
+                    <SliderInput label="Churn Velocity — Annual Turnover Rate" icon={<TrendingDown className="w-4 h-4" />} value={churnVelocity} onChange={setChurnVelocity} min={5} max={200} step={1} display={`${churnVelocity}%`} />
+                    <SliderInput label="Base Monthly Compensation" icon={<DollarSign className="w-4 h-4" />} value={baseSalary} onChange={setBaseSalary} min={1500} max={10000} step={100} display={formatCurrency(baseSalary)} />
+                    <SliderInput label="Ramp-Up (Months)" icon={<Clock className="w-4 h-4" />} value={rampMonths} onChange={setRampMonths} min={1} max={12} step={1} display={`${rampMonths} Mo`} />
+                    <SliderInput label="Acquisition Friction (Cost/Hire)" icon={<Target className="w-4 h-4" />} value={acqFriction} onChange={setAcqFriction} min={500} max={10000} step={100} display={formatCurrency(acqFriction)} />
                   </div>
-                )}
-              </div>
+
+                  {/* Results */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className={`rounded-xl p-6 text-center ${scoreBg}`}>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Stability Score</p>
+                      <p className={`text-6xl md:text-7xl font-bold ${scoreColor}`}>{calc.stabilityScore}</p>
+                      <p className="text-muted-foreground text-sm mt-1">/ 100</p>
+                      <span className={`inline-block mt-3 text-xs font-semibold px-3 py-1 rounded-full ${scoreBg} ${scoreColor}`}>{scoreBadge}</span>
+                    </div>
+                    <div className="bg-destructive/10 rounded-xl p-5 text-center">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Daily Bleed</p>
+                      <p className="text-2xl md:text-3xl font-bold text-destructive">- {formatCurrency(Math.round(calc.dailyBleed))} / DAY</p>
+                    </div>
+                    <div className="bg-primary/10 rounded-xl p-6 text-center border border-primary/20">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Annual Churn Tax</p>
+                      <p className="text-4xl md:text-5xl font-bold text-primary">{formatCurrency(Math.round(calc.totalAnnual))}</p>
+                      <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+                        Based on your {calc.departures} departures and an average salary of {formatCurrency(calc.annualSalary)}, your property is losing {formatCurrency(Math.round(calc.totalAnnual))} annually.
+                      </p>
+                    </div>
+                    <button onClick={() => setShowBreakdown(!showBreakdown)} className="w-full flex items-center justify-center gap-2 text-sm text-primary font-semibold hover:underline transition-colors">
+                      {showBreakdown ? "Hide" : "View"} Forensic Breakdown
+                      {showBreakdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                    {showBreakdown && (
+                      <div className="space-y-3 animate-fade-in">
+                        <BreakdownRow label="Recruitment & Admin" pct={Math.round(calc.recruitPct * 100)} amount={calc.recruitmentCost} />
+                        <BreakdownRow label="Training & Ramp-up" pct={Math.round(calc.trainPct * 100)} amount={calc.trainingCost} />
+                        <BreakdownRow label="Productivity Gap" pct={Math.round(calc.prodPct * 100)} amount={calc.productivityGap} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ───── TAB 2: MASTERY ───── */}
+          <TabsContent value="mastery" className="animate-fade-in">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+                Recover Your <span className="text-primary">{formatCurrency(Math.round(calc.totalAnnual))}</span> Annual Churn Tax
+              </h2>
             </div>
-          </CardContent>
-        </Card>
-      </section>
 
-      {/* CTA Section */}
-      <section className="max-w-4xl mx-auto px-4 pb-16 animate-slide-up" style={{ animationDelay: "0.4s" }}>
-        <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-            Recover Your <span className="text-primary">{formatCurrency(Math.round(calc.totalAnnual))}</span> Annual Churn Tax
-          </h2>
-        </div>
+            <div className="grid md:grid-cols-3 gap-4 mb-10">
+              <StatCard label="Target Reduction" value="40%" />
+              <StatCard label="Recovery Potential" value={`${formatCurrency(Math.round(calc.recoveryPotential))}/mo`} />
+              <StatCard label="Implementation" value="90 Days" />
+            </div>
 
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          <StatCard label="Target Reduction" value="40%" />
-          <StatCard label="Recovery Potential" value={`${formatCurrency(Math.round(calc.recoveryPotential))}/mo`} />
-          <StatCard label="Implementation" value="90 Days" />
-        </div>
+            <div className="mb-10">
+              <h3 className="text-lg font-bold text-foreground mb-4 uppercase tracking-wider">Protocol Dossier</h3>
+              <Accordion type="single" collapsible className="space-y-4">
+                <ProtocolCard
+                  value="protocol-1"
+                  icon={<Cog className="w-5 h-5 text-primary" />}
+                  title="How to Compress the Productivity Gap"
+                  description="Shadowing is a cost center. By deploying mobile-first micro-learning sprints, you transform observers into producers in 60% less time. This protocol uses proficiency gates staff must clear before taking the floor solo, ensuring consistent quality while slashing paid ramp-up periods from months to weeks."
+                />
+                <ProtocolCard
+                  value="protocol-2"
+                  icon={<Crosshair className="w-5 h-5 text-primary" />}
+                  title="The Retention Early-Warning System"
+                  description="Churn is a trailing indicator. The real data is in the weekly delta of team sentiment. Our 'Friday Pulse' logic identifies behaviors like decreased peer shoutouts and incremental late arrivals to predict churn with 85% accuracy, allowing for intervention while retention is still possible."
+                />
+                <ProtocolCard
+                  value="protocol-3"
+                  icon={<RefreshCw className="w-5 h-5 text-primary" />}
+                  title="The Ecosystem Transfer Protocol"
+                  description="Staff shouldn't leave the network when your season ends. We establish 'Staffing Boomerangs' between seasonal partners (Winter vs Summer). This keeps talent within your sphere, providing security for staff and reducing next-season hiring friction by 80% as veterans return pre-trained."
+                />
+              </Accordion>
+            </div>
 
-        <div className="text-center space-y-4">
-          <Button
-            variant="gold"
-            size="lg"
-            className="text-base px-10 py-6 text-lg shadow-lg shadow-primary/20 hover-scale"
-            onClick={() => navigate("/pulse/signup")}
-          >
-            Start Your Free Staff Audit →
-          </Button>
-          <p className="text-xs text-muted-foreground">Free pulse survey • No credit card • Results in 48 hours</p>
-        </div>
+            <CTABlock navigate={navigate} />
+          </TabsContent>
+
+          {/* ───── TAB 3: DIY TOOLBOX ───── */}
+          <TabsContent value="toolbox" className="animate-fade-in">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">DIY Toolbox</h2>
+              <p className="text-muted-foreground mt-2">Manual tools to implement these protocols yourself</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6 mb-10">
+              <ToolboxCard
+                icon={<ClipboardList className="w-8 h-8 text-primary" />}
+                title="Churn-Proof Onboarding Audit"
+                description="A standardized 30-day ramp-up plan to ensure efficiency from day one."
+                highlight="We will process your first 20 responses and send you a 'Stability Snapshot' report for free."
+                time="Setup: 8 hours | Ongoing: 2 hours/week"
+              />
+              <ToolboxCard
+                icon={<BarChart3 className="w-8 h-8 text-primary" />}
+                title="Weekly Churn Pulse Audit"
+                description="The 'Friday Pulse' 5-question survey to gauge team sentiment instantly."
+                highlight="We will process your first 20 responses and send you a 'Stability Snapshot' report for free."
+                time="Setup: 4 hours | Ongoing: 1 hour/week"
+              />
+              <ToolboxCard
+                icon={<Mic className="w-8 h-8 text-primary" />}
+                title="Churn Forensic Exit Audit"
+                description="A neutral 3rd party tool allowing staff to be truthful without friction."
+                time="Setup: 6 hours | Ongoing: 3 hours/month"
+              />
+            </div>
+
+            <Card className="border-primary/20 bg-card/60 mb-10">
+              <CardContent className="p-6 text-center space-y-2">
+                <p className="text-muted-foreground text-sm">Total annual time investment:</p>
+                <p className="text-2xl font-bold text-destructive">400+ hours/year</p>
+                <p className="text-muted-foreground text-sm">Or let Be Connect handle it:</p>
+                <p className="text-2xl font-bold text-primary">€24,000/year</p>
+              </CardContent>
+            </Card>
+
+            <CTABlock navigate={navigate} />
+          </TabsContent>
+        </Tabs>
       </section>
 
       {/* Footer */}
@@ -213,26 +237,19 @@ export default function ChurnCalculator() {
   );
 }
 
-function SliderInput({
-  label, icon, value, onChange, min, max, step, display,
-}: {
+/* ── Sub-components ── */
+
+function SliderInput({ label, icon, value, onChange, min, max, step, display }: {
   label: string; icon: React.ReactNode; value: number; onChange: (v: number) => void;
   min: number; max: number; step: number; display: string;
 }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-          {icon} {label}
-        </div>
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground">{icon} {label}</div>
         <span className="text-sm font-bold text-primary">{display}</span>
       </div>
-      <Slider
-        value={[value]}
-        onValueChange={([v]) => onChange(v)}
-        min={min} max={max} step={step}
-        className="w-full"
-      />
+      <Slider value={[value]} onValueChange={([v]) => onChange(v)} min={min} max={max} step={step} className="w-full" />
     </div>
   );
 }
@@ -254,5 +271,51 @@ function StatCard({ label, value }: { label: string; value: string }) {
         <p className="text-xl md:text-2xl font-bold text-primary">{value}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function ProtocolCard({ value, icon, title, description }: {
+  value: string; icon: React.ReactNode; title: string; description: string;
+}) {
+  return (
+    <AccordionItem value={value} className="border border-primary/30 rounded-xl overflow-hidden bg-card/60">
+      <AccordionTrigger className="px-5 py-4 hover:no-underline">
+        <div className="flex items-center gap-3 text-left">
+          {icon}
+          <span className="font-semibold text-foreground">{title}</span>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="px-5 pb-5">
+        <p className="text-muted-foreground text-sm leading-relaxed mb-4">{description}</p>
+        <Button variant="gold" size="sm">Minimize Blueprint →</Button>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+function ToolboxCard({ icon, title, description, highlight, time }: {
+  icon: React.ReactNode; title: string; description: string; highlight?: string; time: string;
+}) {
+  return (
+    <Card className="bg-card/60 border-border/50">
+      <CardContent className="p-6 space-y-3">
+        <div className="mb-2">{icon}</div>
+        <h4 className="font-bold text-foreground">{title}</h4>
+        <p className="text-sm text-muted-foreground">{description}</p>
+        {highlight && <p className="text-xs text-primary font-medium">{highlight}</p>}
+        <p className="text-xs text-muted-foreground">{time}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CTABlock({ navigate }: { navigate: (path: string) => void }) {
+  return (
+    <div className="text-center space-y-4">
+      <Button variant="gold" size="lg" className="text-base px-10 py-6 text-lg shadow-lg shadow-primary/20 hover-scale" onClick={() => navigate("/pulse/signup")}>
+        Run a Team Pulse Audit →
+      </Button>
+      <p className="text-xs text-muted-foreground">We'll process your first 20 responses and send you a Stability Snapshot report for free.</p>
+    </div>
   );
 }

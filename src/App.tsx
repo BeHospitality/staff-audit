@@ -21,7 +21,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/pulse" replace />} />
+          <Route path="/" element={<ChurnCalculator />} />
           <Route path="/pulse" element={<ChurnCalculator />} />
           <Route path="/pulse/survey" element={<PulseSurvey />} />
           <Route path="/pulse/login" element={<Login />} />
