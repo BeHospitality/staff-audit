@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Activity, LogOut, Eye, FileText, Copy, ExternalLink, MessageCircle } from "lucide-react";
+import { Activity, LogOut, Eye, FileText, Copy, ExternalLink, MessageCircle, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import OrgDetailView from "@/components/dashboard/OrgDetailView";
 import DossierList from "@/components/dashboard/DossierList";
@@ -26,6 +26,7 @@ export default function PulseDashboard() {
   const [showDossiers, setShowDossiers] = useState(false);
   const [dossierModal, setDossierModal] = useState<{ orgId: string; orgName: string } | null>(null);
   const [welcomeData, setWelcomeData] = useState<{ orgName: string; pulseLink: string } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -36,6 +37,11 @@ export default function PulseDashboard() {
       setUser(session.user);
       await loadOrgs();
       setLoading(false);
+
+      // Check admin status
+      supabase.functions.invoke("check-admin").then(({ data }) => {
+        if (data?.is_admin) setIsAdmin(true);
+      });
 
       // Check for welcome modal data
       const raw = sessionStorage.getItem("welcome_data");
@@ -133,6 +139,11 @@ export default function PulseDashboard() {
           <span className="text-muted-foreground text-sm hidden md:inline">| Command Centre</span>
         </div>
         <div className="flex items-center gap-3">
+          {isAdmin && (
+            <Button variant="outline" size="sm" onClick={() => navigate("/pulse/admin")}>
+              <Shield className="w-4 h-4 mr-1" /> Admin View
+            </Button>
+          )}
           <Button
             variant={showDossiers ? "gold" : "outline"}
             size="sm"
