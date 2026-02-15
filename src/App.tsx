@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PulseSurvey from "./pages/PulseSurvey";
 import PulseDashboard from "./pages/PulseDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import DossierPage from "./pages/DossierPage";
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/pulse/login" element={<Login />} />
           <Route path="/pulse/signup" element={<Signup />} />
           <Route path="/pulse/dashboard" element={<PulseDashboard />} />
+          <Route path="/pulse/admin" element={<AdminDashboard />} />
           <Route path="/pulse/dossier/:code" element={<DossierPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
