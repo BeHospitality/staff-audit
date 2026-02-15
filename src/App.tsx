@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PulseSurvey from "./pages/PulseSurvey";
 import PulseDashboard from "./pages/PulseDashboard";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import DossierPage from "./pages/DossierPage";
 import NotFound from "./pages/NotFound";
 
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Navigate to="/pulse?org=kilkea-castle" replace />} />
           <Route path="/pulse" element={<PulseSurvey />} />
           <Route path="/pulse/login" element={<Login />} />
+          <Route path="/pulse/signup" element={<Signup />} />
           <Route path="/pulse/dashboard" element={<PulseDashboard />} />
           <Route path="/pulse/dossier/:code" element={<DossierPage />} />
           <Route path="*" element={<NotFound />} />

@@ -19,18 +19,21 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          name: string | null
           organization_id: string
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
+          name?: string | null
           organization_id: string
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
+          name?: string | null
           organization_id?: string
         }
         Relationships: [
@@ -47,6 +50,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          industry: string | null
           manager_email: string | null
           org_code: string
           org_name: string
@@ -54,6 +58,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          industry?: string | null
           manager_email?: string | null
           org_code: string
           org_name: string
@@ -61,6 +66,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          industry?: string | null
           manager_email?: string | null
           org_code?: string
           org_name?: string

@@ -64,8 +64,11 @@ export default function Login() {
           </Button>
         </form>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          Be Connect Staff Only
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Don't have an account?{" "}
+          <a href="/pulse/signup" className="text-primary hover:underline">
+            Sign Up
+          </a>
         </p>
       </div>
     </div>
