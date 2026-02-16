@@ -4,11 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Activity, LogOut, Eye, FileText, Shield, ToggleLeft, ToggleRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getDemoOrgs } from "@/data/demoData";
 import OrgDetailView from "@/components/dashboard/OrgDetailView";
 import DossierList from "@/components/dashboard/DossierList";
 import GenerateDossierModal from "@/components/dashboard/GenerateDossierModal";
 import WelcomeModal from "@/components/dashboard/WelcomeModal";
-
 interface Org {
   id: string;
   org_name: string;
@@ -122,7 +122,8 @@ export default function PulseDashboard() {
   }
 
   if (selectedOrg) {
-    const org = orgs.find((o) => o.id === selectedOrg);
+    const allOrgs = demoMode ? getDemoOrgs() : orgs;
+    const org = allOrgs.find((o) => o.id === selectedOrg);
     return (
       <>
         <OrgDetailView
@@ -192,7 +193,7 @@ export default function PulseDashboard() {
           <>
             <div className="animate-fade-in">
               <h1 className="text-2xl md:text-3xl font-bold">All Organizations</h1>
-              <p className="text-muted-foreground text-sm mt-1">{orgs.length} organizations tracked</p>
+              <p className="text-muted-foreground text-sm mt-1">{demoMode ? getDemoOrgs().length : orgs.length} organizations tracked{demoMode && " (demo data)"}</p>
             </div>
 
             {orgs.length === 0 && (
@@ -203,8 +204,8 @@ export default function PulseDashboard() {
             )}
 
             <div className="grid gap-4">
-              {orgs.map((org, i) => {
-                const badge = scoreBadge(demoMode ? 52 : org.healthScore);
+              {(demoMode ? getDemoOrgs().map(d => ({ ...d, lastPulseDate: d.lastPulseDate })) : orgs).map((org, i) => {
+                const badge = scoreBadge(org.healthScore);
                 return (
                   <div
                     key={org.id}
@@ -217,10 +218,10 @@ export default function PulseDashboard() {
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${badge.cls}`}>{badge.text}</span>
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                        <span>{demoMode ? "19" : org.responseCount} responses</span>
-                        {(demoMode || org.healthScore > 0) && (
-                          <span className={scoreColor(demoMode ? 52 : org.healthScore)}>
-                            Health: {demoMode ? "52" : org.healthScore}/100
+                        <span>{org.responseCount} responses</span>
+                        {org.healthScore > 0 && (
+                          <span className={scoreColor(org.healthScore)}>
+                            Health: {org.healthScore}/100
                           </span>
                         )}
                         {org.lastPulseDate && (

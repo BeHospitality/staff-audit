@@ -107,7 +107,7 @@ export default function OrgDetailView({ orgId, orgName, orgCode, onBack, onGener
   });
   const frictionFeedback = feedbacks.filter((f) => !positiveFeedback.includes(f));
 
-  const surveyLink = `${window.location.origin}/pulse/survey?org=${orgCode}`;
+  const surveyLink = `${window.location.origin}/pulse?org=${orgCode}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(surveyLink);
