@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Activity, ChevronDown, ChevronUp, TrendingDown, Users, Clock, DollarSign, Target, Cog, Crosshair, RefreshCw, ClipboardList, BarChart3, Mic } from "lucide-react";
+import { Activity, ChevronDown, ChevronUp, TrendingDown, Users, Clock, DollarSign, Target, ClipboardList, BarChart3, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import ProtocolDossier from "@/components/calculator/ProtocolDossier";
+import PricingSection from "@/components/calculator/PricingSection";
 
 function formatCurrency(val: number) {
   return "€" + val.toLocaleString("en-IE", { maximumFractionDigits: 0 });
@@ -23,9 +24,10 @@ export default function ChurnCalculator() {
   const calc = useMemo(() => {
     const departures = teamCapacity * (churnVelocity / 100);
     const annualSalary = baseSalary * 12;
+    const rampFactor = rampMonths / 3;
     const recruitmentCost = departures * acqFriction;
-    const trainingCost = departures * (baseSalary * rampMonths * 0.25);
-    const productivityGap = departures * (baseSalary * rampMonths * 0.45);
+    const trainingCost = departures * (annualSalary * 0.25 * rampFactor);
+    const productivityGap = departures * (annualSalary * 0.2756 * rampFactor);
     const totalAnnual = recruitmentCost + trainingCost + productivityGap;
     const dailyBleed = totalAnnual / 365;
     const stabilityScore = Math.max(0, Math.min(100, 100 - churnVelocity));
@@ -71,7 +73,7 @@ export default function ChurnCalculator() {
           <span className="text-primary">Operational Churn Tax</span>
         </h1>
         <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-          Turnover isn't just HR friction—it's a direct leak on your bottom line.
+          Turnover isn't just HR friction — it's a direct leak on your bottom line.
         </p>
       </section>
 
@@ -120,7 +122,7 @@ export default function ChurnCalculator() {
                       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Annual Churn Tax</p>
                       <p className="text-4xl md:text-5xl font-bold text-primary">{formatCurrency(Math.round(calc.totalAnnual))}</p>
                       <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                        Based on your {calc.departures} departures and an average salary of {formatCurrency(calc.annualSalary)}, your property is losing {formatCurrency(Math.round(calc.totalAnnual))} annually.
+                        Based on {calc.departures} annual departures and an average salary of {formatCurrency(calc.annualSalary)}, your organisation is losing {formatCurrency(Math.round(calc.totalAnnual))} every year to preventable turnover.
                       </p>
                     </div>
                     <button onClick={() => setShowBreakdown(!showBreakdown)} className="w-full flex items-center justify-center gap-2 text-sm text-primary font-semibold hover:underline transition-colors">
@@ -146,6 +148,7 @@ export default function ChurnCalculator() {
               <h2 className="text-2xl md:text-3xl font-bold text-foreground">
                 Recover Your <span className="text-primary">{formatCurrency(Math.round(calc.totalAnnual))}</span> Annual Churn Tax
               </h2>
+              <p className="text-muted-foreground mt-2 text-sm">A proven system to reduce turnover and reclaim lost revenue</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-4 mb-10">
@@ -154,31 +157,8 @@ export default function ChurnCalculator() {
               <StatCard label="Implementation" value="90 Days" />
             </div>
 
-            <div className="mb-10">
-              <h3 className="text-lg font-bold text-foreground mb-4 uppercase tracking-wider">Protocol Dossier</h3>
-              <Accordion type="single" collapsible className="space-y-4">
-                <ProtocolCard
-                  value="protocol-1"
-                  icon={<Cog className="w-5 h-5 text-primary" />}
-                  title="How to Compress the Productivity Gap"
-                  description="Shadowing is a cost center. By deploying mobile-first micro-learning sprints, you transform observers into producers in 60% less time. This protocol uses proficiency gates staff must clear before taking the floor solo, ensuring consistent quality while slashing paid ramp-up periods from months to weeks."
-                />
-                <ProtocolCard
-                  value="protocol-2"
-                  icon={<Crosshair className="w-5 h-5 text-primary" />}
-                  title="The Retention Early-Warning System"
-                  description="Churn is a trailing indicator. The real data is in the weekly delta of team sentiment. Our 'Friday Pulse' logic identifies behaviors like decreased peer shoutouts and incremental late arrivals to predict churn with 85% accuracy, allowing for intervention while retention is still possible."
-                />
-                <ProtocolCard
-                  value="protocol-3"
-                  icon={<RefreshCw className="w-5 h-5 text-primary" />}
-                  title="The Ecosystem Transfer Protocol"
-                  description="Staff shouldn't leave the network when your season ends. We establish 'Staffing Boomerangs' between seasonal partners (Winter vs Summer). This keeps talent within your sphere, providing security for staff and reducing next-season hiring friction by 80% as veterans return pre-trained."
-                />
-              </Accordion>
-            </div>
-
-            <CTABlock navigate={navigate} />
+            <ProtocolDossier />
+            <PricingSection onCTA={() => navigate("/pulse/signup")} />
           </TabsContent>
 
           {/* ───── TAB 3: DIY TOOLBOX ───── */}
@@ -193,14 +173,14 @@ export default function ChurnCalculator() {
                 icon={<ClipboardList className="w-8 h-8 text-primary" />}
                 title="Churn-Proof Onboarding Audit"
                 description="A standardized 30-day ramp-up plan to ensure efficiency from day one."
-                highlight="We will process your first 20 responses and send you a 'Stability Snapshot' report for free."
+                highlight="We'll process your first 20 responses and send you a 'Stability Snapshot' report for free."
                 time="Setup: 8 hours | Ongoing: 2 hours/week"
               />
               <ToolboxCard
                 icon={<BarChart3 className="w-8 h-8 text-primary" />}
                 title="Weekly Churn Pulse Audit"
                 description="The 'Friday Pulse' 5-question survey to gauge team sentiment instantly."
-                highlight="We will process your first 20 responses and send you a 'Stability Snapshot' report for free."
+                highlight="We'll process your first 20 responses and send you a 'Stability Snapshot' report for free."
                 time="Setup: 4 hours | Ongoing: 1 hour/week"
               />
               <ToolboxCard
@@ -220,7 +200,12 @@ export default function ChurnCalculator() {
               </CardContent>
             </Card>
 
-            <CTABlock navigate={navigate} />
+            <div className="text-center space-y-4">
+              <Button variant="gold" size="lg" className="text-base px-10 py-6 text-lg shadow-lg shadow-primary/20 hover-scale" onClick={() => navigate("/pulse/signup")}>
+                Start With Free Team Health Check →
+              </Button>
+              <p className="text-xs text-muted-foreground">No credit card required. See what's really happening.</p>
+            </div>
           </TabsContent>
         </Tabs>
       </section>
@@ -274,25 +259,6 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ProtocolCard({ value, icon, title, description }: {
-  value: string; icon: React.ReactNode; title: string; description: string;
-}) {
-  return (
-    <AccordionItem value={value} className="border border-primary/30 rounded-xl overflow-hidden bg-card/60">
-      <AccordionTrigger className="px-5 py-4 hover:no-underline">
-        <div className="flex items-center gap-3 text-left">
-          {icon}
-          <span className="font-semibold text-foreground">{title}</span>
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="px-5 pb-5">
-        <p className="text-muted-foreground text-sm leading-relaxed mb-4">{description}</p>
-        <Button variant="gold" size="sm">Minimize Blueprint →</Button>
-      </AccordionContent>
-    </AccordionItem>
-  );
-}
-
 function ToolboxCard({ icon, title, description, highlight, time }: {
   icon: React.ReactNode; title: string; description: string; highlight?: string; time: string;
 }) {
@@ -306,16 +272,5 @@ function ToolboxCard({ icon, title, description, highlight, time }: {
         <p className="text-xs text-muted-foreground">{time}</p>
       </CardContent>
     </Card>
-  );
-}
-
-function CTABlock({ navigate }: { navigate: (path: string) => void }) {
-  return (
-    <div className="text-center space-y-4">
-      <Button variant="gold" size="lg" className="text-base px-10 py-6 text-lg shadow-lg shadow-primary/20 hover-scale" onClick={() => navigate("/pulse/signup")}>
-        Run a Team Pulse Audit →
-      </Button>
-      <p className="text-xs text-muted-foreground">We'll process your first 20 responses and send you a Stability Snapshot report for free.</p>
-    </div>
   );
 }
