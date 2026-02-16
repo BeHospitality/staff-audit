@@ -25,7 +25,7 @@ export default function PulseDashboard() {
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const [showDossiers, setShowDossiers] = useState(false);
   const [dossierModal, setDossierModal] = useState<{ orgId: string; orgName: string } | null>(null);
-  const [welcomeData, setWelcomeData] = useState<{ orgName: string; pulseLink: string } | null>(null);
+  const [welcomeData, setWelcomeData] = useState<{ orgName: string; pulseLink: string; email?: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [demoMode, setDemoMode] = useState(() => localStorage.getItem("beconnect_demo_mode") === "true");
   const navigate = useNavigate();
@@ -255,6 +255,7 @@ export default function PulseDashboard() {
         <WelcomeModal
           orgName={welcomeData.orgName}
           pulseLink={welcomeData.pulseLink}
+          email={welcomeData.email}
           onClose={() => setWelcomeData(null)}
         />
       )}
