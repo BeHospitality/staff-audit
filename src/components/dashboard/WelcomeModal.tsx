@@ -6,10 +6,11 @@ import { useToast } from "@/hooks/use-toast";
 interface WelcomeModalProps {
   orgName: string;
   pulseLink: string;
+  email?: string;
   onClose: () => void;
 }
 
-export default function WelcomeModal({ orgName, pulseLink, onClose }: WelcomeModalProps) {
+export default function WelcomeModal({ orgName, pulseLink, email, onClose }: WelcomeModalProps) {
   const { toast } = useToast();
 
   const copyLink = () => {
@@ -34,9 +35,18 @@ export default function WelcomeModal({ orgName, pulseLink, onClose }: WelcomeMod
           </button>
         </div>
 
-        <p className="text-muted-foreground text-sm mb-4">
-          Your organization <strong>{orgName}</strong> is all set up. Share the link below with your team to start collecting pulse responses.
-        </p>
+        <div className="mb-4 space-y-3">
+          <p className="text-sm font-medium text-success flex items-center gap-1.5">
+            ✅ Account Created Successfully!
+          </p>
+          <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 text-sm">
+            <p className="font-medium text-primary mb-1">⚠️ Important: Check your email to verify your account before logging in.</p>
+            <p className="text-muted-foreground">
+              We've sent a verification email to <strong>{email || 'your email'}</strong>. Click the link in that email to activate your account.
+            </p>
+            <p className="text-muted-foreground mt-1">Once verified, you can log in to access your dashboard.</p>
+          </div>
+        </div>
 
         <div className="mb-4">
           <label className="text-xs font-medium text-muted-foreground mb-1 block">
