@@ -7,9 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ProtocolDossier from "@/components/calculator/ProtocolDossier";
 import PricingSection from "@/components/calculator/PricingSection";
+import RegionSelector, { type Region, type RegionDefaults } from "@/components/calculator/RegionSelector";
 
-function formatCurrency(val: number) {
-  return "€" + val.toLocaleString("en-IE", { maximumFractionDigits: 0 });
+function formatCurrency(val: number, prefix = "€") {
+  return prefix + val.toLocaleString("en-IE", { maximumFractionDigits: 0 });
 }
 
 export default function ChurnCalculator() {
@@ -20,6 +21,17 @@ export default function ChurnCalculator() {
   const [rampMonths, setRampMonths] = useState(3);
   const [acqFriction, setAcqFriction] = useState(2500);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [currencySymbol, setCurrencySymbol] = useState("€");
+  const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
+
+  const handleRegionSelect = (region: Region, defaults: RegionDefaults) => {
+    setSelectedRegion(region);
+    setBaseSalary(defaults.baseSalary);
+    setAcqFriction(defaults.acqFriction);
+    setCurrencySymbol(defaults.currencySymbol);
+  };
+
+  const fmt = (val: number) => formatCurrency(val, currencySymbol);
 
   const calc = useMemo(() => {
     const departures = teamCapacity * (churnVelocity / 100);
@@ -78,6 +90,9 @@ export default function ChurnCalculator() {
       </section>
 
       {/* Tabs */}
+      <RegionSelector onSelect={handleRegionSelect} />
+
+      {/* Tabs */}
       <section className="max-w-6xl mx-auto px-4 pb-16">
         <Tabs defaultValue="diagnostic" className="w-full">
           <TabsList className="w-full max-w-md mx-auto mb-8 bg-secondary/60 h-12">
@@ -101,9 +116,9 @@ export default function ChurnCalculator() {
                   <div className="lg:col-span-3 space-y-7">
                     <SliderInput label="Team Capacity" icon={<Users className="w-4 h-4" />} value={teamCapacity} onChange={setTeamCapacity} min={10} max={1000} step={5} display={`${teamCapacity} Staff`} />
                     <SliderInput label="Churn Velocity — Annual Turnover Rate" icon={<TrendingDown className="w-4 h-4" />} value={churnVelocity} onChange={setChurnVelocity} min={5} max={200} step={1} display={`${churnVelocity}%`} />
-                    <SliderInput label="Base Monthly Compensation" icon={<DollarSign className="w-4 h-4" />} value={baseSalary} onChange={setBaseSalary} min={1500} max={10000} step={100} display={formatCurrency(baseSalary)} />
+                    <SliderInput label="Base Monthly Compensation" icon={<DollarSign className="w-4 h-4" />} value={baseSalary} onChange={setBaseSalary} min={1500} max={10000} step={100} display={fmt(baseSalary)} />
                     <SliderInput label="Ramp-Up (Months)" icon={<Clock className="w-4 h-4" />} value={rampMonths} onChange={setRampMonths} min={1} max={12} step={1} display={`${rampMonths} Mo`} />
-                    <SliderInput label="Acquisition Friction (Cost/Hire)" icon={<Target className="w-4 h-4" />} value={acqFriction} onChange={setAcqFriction} min={500} max={10000} step={100} display={formatCurrency(acqFriction)} />
+                    <SliderInput label="Acquisition Friction (Cost/Hire)" icon={<Target className="w-4 h-4" />} value={acqFriction} onChange={setAcqFriction} min={500} max={10000} step={100} display={fmt(acqFriction)} />
                   </div>
 
                   {/* Results */}
@@ -116,13 +131,13 @@ export default function ChurnCalculator() {
                     </div>
                     <div className="bg-destructive/10 rounded-xl p-5 text-center">
                       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Daily Bleed</p>
-                      <p className="text-2xl md:text-3xl font-bold text-destructive">- {formatCurrency(Math.round(calc.dailyBleed))} / DAY</p>
+                      <p className="text-2xl md:text-3xl font-bold text-destructive">- {fmt(Math.round(calc.dailyBleed))} / DAY</p>
                     </div>
                     <div className="bg-primary/10 rounded-xl p-6 text-center border border-primary/20">
                       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Annual Churn Tax</p>
-                      <p className="text-4xl md:text-5xl font-bold text-primary">{formatCurrency(Math.round(calc.totalAnnual))}</p>
+                      <p className="text-4xl md:text-5xl font-bold text-primary">{fmt(Math.round(calc.totalAnnual))}</p>
                       <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                        Based on {calc.departures} annual departures and an average salary of {formatCurrency(calc.annualSalary)}, your organisation is losing {formatCurrency(Math.round(calc.totalAnnual))} every year to preventable turnover.
+                        Based on {calc.departures} annual departures and an average salary of {fmt(calc.annualSalary)}, your organisation is losing {fmt(Math.round(calc.totalAnnual))} every year to preventable turnover.
                       </p>
                     </div>
                     <button onClick={() => setShowBreakdown(!showBreakdown)} className="w-full flex items-center justify-center gap-2 text-sm text-primary font-semibold hover:underline transition-colors">
@@ -131,9 +146,9 @@ export default function ChurnCalculator() {
                     </button>
                     {showBreakdown && (
                       <div className="space-y-3 animate-fade-in">
-                        <BreakdownRow label="Recruitment & Admin" pct={Math.round(calc.recruitPct * 100)} amount={calc.recruitmentCost} />
-                        <BreakdownRow label="Training & Ramp-up" pct={Math.round(calc.trainPct * 100)} amount={calc.trainingCost} />
-                        <BreakdownRow label="Productivity Gap" pct={Math.round(calc.prodPct * 100)} amount={calc.productivityGap} />
+                        <BreakdownRow label="Recruitment & Admin" pct={Math.round(calc.recruitPct * 100)} amount={calc.recruitmentCost} currency={currencySymbol} />
+                        <BreakdownRow label="Training & Ramp-up" pct={Math.round(calc.trainPct * 100)} amount={calc.trainingCost} currency={currencySymbol} />
+                        <BreakdownRow label="Productivity Gap" pct={Math.round(calc.prodPct * 100)} amount={calc.productivityGap} currency={currencySymbol} />
                       </div>
                     )}
                   </div>
@@ -146,14 +161,14 @@ export default function ChurnCalculator() {
           <TabsContent value="mastery" className="animate-fade-in">
             <div className="text-center mb-8">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-                Recover Your <span className="text-primary">{formatCurrency(Math.round(calc.totalAnnual))}</span> Annual Churn Tax
+                Recover Your <span className="text-primary">{fmt(Math.round(calc.totalAnnual))}</span> Annual Churn Tax
               </h2>
               <p className="text-muted-foreground mt-2 text-sm">A proven system to reduce turnover and reclaim lost revenue</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-4 mb-10">
               <StatCard label="Target Reduction" value="40%" />
-              <StatCard label="Recovery Potential" value={`${formatCurrency(Math.round(calc.recoveryPotential))}/mo`} />
+              <StatCard label="Recovery Potential" value={`${fmt(Math.round(calc.recoveryPotential))}/mo`} />
               <StatCard label="Implementation" value="90 Days" />
             </div>
 
@@ -239,11 +254,11 @@ function SliderInput({ label, icon, value, onChange, min, max, step, display }: 
   );
 }
 
-function BreakdownRow({ label, pct, amount }: { label: string; pct: number; amount: number }) {
+function BreakdownRow({ label, pct, amount, currency = "€" }: { label: string; pct: number; amount: number; currency?: string }) {
   return (
     <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-3">
       <span className="text-sm text-foreground">{label} ({pct}%)</span>
-      <span className="text-sm font-bold text-primary">{formatCurrency(Math.round(amount))}</span>
+      <span className="text-sm font-bold text-primary">{formatCurrency(Math.round(amount), currency)}</span>
     </div>
   );
 }
