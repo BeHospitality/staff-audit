@@ -33,7 +33,7 @@ const REGIONS: RegionData[] = [
     id: "ireland",
     flag: "🇮🇪",
     name: "Ireland",
-    defaults: { baseSalary: 2400, acqFriction: 2500, currencySymbol: "€", label: "Ireland" },
+    defaults: { baseSalary: 2100, acqFriction: 2200, currencySymbol: "€", label: "Ireland" },
     insightHeading: "Ireland: Understanding Your Costs",
     costDrivers: [
       { title: "Employer PRSI: 11.05% (2024 rate)", detail: "Adds €2,650/year per €24K employee" },
