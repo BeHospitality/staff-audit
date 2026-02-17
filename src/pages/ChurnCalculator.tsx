@@ -26,7 +26,7 @@ export default function ChurnCalculator() {
 
   const [teamCapacity, setTeamCapacity] = useState(storedRegion === "ireland" ? 48 : 50);
   const [churnVelocity, setChurnVelocity] = useState(storedRegion === "ireland" ? 30 : 50);
-  const [baseSalary, setBaseSalary] = useState(storedRegionData?.defaults.baseSalary ?? 2800);
+  const [baseSalary, setBaseSalary] = useState(storedRegionData?.defaults.baseSalary ?? 2400);
   const [rampMonths, setRampMonths] = useState(3);
   const [acqFriction, setAcqFriction] = useState(storedRegionData?.defaults.acqFriction ?? 2500);
   const [showBreakdown, setShowBreakdown] = useState(false);
@@ -155,7 +155,7 @@ export default function ChurnCalculator() {
                       </p>
                       {isIreland && (
                         <p className="text-xs text-muted-foreground mt-1 italic">
-                          Cornell CHR + Irish Hotels Federation methodology
+                          Sources: ITIC, Fáilte Ireland, IHF, CSO
                         </p>
                       )}
                     </div>
