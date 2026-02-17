@@ -53,10 +53,16 @@ export default function GenerateDossierModal({ orgId, orgName, onClose }: Props)
     setResult({ url, pin: pinCode });
   };
 
-  const handleCopy = () => {
+  const handleCopyLink = () => {
     if (!result) return;
-    navigator.clipboard.writeText(`${result.url}\nPIN: ${result.pin}`);
-    toast({ title: "Link & PIN copied!" });
+    navigator.clipboard.writeText(result.url);
+    toast({ title: "Link copied!" });
+  };
+
+  const handleCopyPin = () => {
+    if (!result) return;
+    navigator.clipboard.writeText(result.pin);
+    toast({ title: "PIN copied!" });
   };
 
   const handleWhatsApp = () => {
@@ -103,10 +109,15 @@ export default function GenerateDossierModal({ orgId, orgName, onClose }: Props)
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={handleCopy}>
-                <Copy className="w-4 h-4 mr-1" /> Copy Link & PIN
+              <Button variant="outline" className="flex-1" onClick={handleCopyLink}>
+                <Copy className="w-4 h-4 mr-1" /> Copy Link
               </Button>
-              <Button variant="gold" className="flex-1" onClick={handleWhatsApp}>
+              <Button variant="outline" className="flex-1" onClick={handleCopyPin}>
+                <Copy className="w-4 h-4 mr-1" /> Copy PIN
+              </Button>
+            </div>
+            <div>
+              <Button variant="gold" className="w-full" onClick={handleWhatsApp}>
                 <MessageCircle className="w-4 h-4 mr-1" /> WhatsApp
               </Button>
             </div>
