@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Activity, ChevronDown, ChevronUp, TrendingDown, Users, Clock, DollarSign, Target, ClipboardList, BarChart3, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,30 +7,52 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ProtocolDossier from "@/components/calculator/ProtocolDossier";
 import PricingSection from "@/components/calculator/PricingSection";
-import RegionSelector, { type Region, type RegionDefaults } from "@/components/calculator/RegionSelector";
+import RegionSelector, { RegionBadge, REGIONS, type Region, type RegionDefaults } from "@/components/calculator/RegionSelector";
 
 function formatCurrency(val: number, prefix = "€") {
   return prefix + val.toLocaleString("en-IE", { maximumFractionDigits: 0 });
 }
 
+const STORAGE_KEY = "staff-audit-region";
+
 export default function ChurnCalculator() {
   const navigate = useNavigate();
+  const calculatorRef = useRef<HTMLDivElement>(null);
+
+  // Restore region from localStorage
+  const storedRegion = localStorage.getItem(STORAGE_KEY) as Region | null;
+  const storedRegionData = storedRegion ? REGIONS.find(r => r.id === storedRegion) : null;
+
   const [teamCapacity, setTeamCapacity] = useState(50);
   const [churnVelocity, setChurnVelocity] = useState(50);
-  const [baseSalary, setBaseSalary] = useState(2800);
+  const [baseSalary, setBaseSalary] = useState(storedRegionData?.defaults.baseSalary ?? 2800);
   const [rampMonths, setRampMonths] = useState(3);
-  const [acqFriction, setAcqFriction] = useState(2500);
+  const [acqFriction, setAcqFriction] = useState(storedRegionData?.defaults.acqFriction ?? 2500);
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const [currencySymbol, setCurrencySymbol] = useState("€");
-  const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
+  const [currencySymbol, setCurrencySymbol] = useState(storedRegionData?.defaults.currencySymbol ?? "€");
+  const [selectedRegion, setSelectedRegion] = useState<Region | null>(storedRegion);
+  const [regionConfirmed, setRegionConfirmed] = useState(!!storedRegion);
 
-  const handleRegionSelect = (region: Region, defaults: RegionDefaults) => {
+  const handleRegionConfirmed = (region: Region, defaults: RegionDefaults) => {
     setSelectedRegion(region);
     setBaseSalary(defaults.baseSalary);
     setAcqFriction(defaults.acqFriction);
     setCurrencySymbol(defaults.currencySymbol);
+    setRegionConfirmed(true);
+    // Smooth scroll to calculator after a short delay
+    setTimeout(() => {
+      calculatorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   };
 
+  const handleChangeRegion = () => {
+    setRegionConfirmed(false);
+    setSelectedRegion(null);
+    localStorage.removeItem(STORAGE_KEY);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const regionData = selectedRegion ? REGIONS.find(r => r.id === selectedRegion) : null;
   const fmt = (val: number) => formatCurrency(val, currencySymbol);
 
   const calc = useMemo(() => {
@@ -90,10 +112,23 @@ export default function ChurnCalculator() {
       </section>
 
       {/* Tabs */}
-      <RegionSelector onSelect={handleRegionSelect} />
+      <RegionSelector
+        onRegionConfirmed={handleRegionConfirmed}
+        onChangeRegion={handleChangeRegion}
+        isConfirmed={regionConfirmed}
+        currentRegion={selectedRegion}
+      />
 
-      {/* Tabs */}
-      <section className="max-w-6xl mx-auto px-4 pb-16">
+      {/* Calculator - only visible after region confirmed */}
+      {regionConfirmed && (
+      <section className="max-w-6xl mx-auto px-4 pb-16 animate-fade-in" ref={calculatorRef}>
+        {regionData && (
+          <RegionBadge
+            region={regionData.name}
+            flag={regionData.flag}
+            onChangeRegion={handleChangeRegion}
+          />
+        )}
         <Tabs defaultValue="diagnostic" className="w-full">
           <TabsList className="w-full max-w-md mx-auto mb-8 bg-secondary/60 h-12">
             <TabsTrigger value="diagnostic" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm font-semibold">
@@ -224,6 +259,7 @@ export default function ChurnCalculator() {
           </TabsContent>
         </Tabs>
       </section>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-border/30 py-6 text-center">
