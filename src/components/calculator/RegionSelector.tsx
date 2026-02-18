@@ -52,13 +52,13 @@ const REGIONS: RegionData[] = [
     defaults: { baseSalary: 3200, acqFriction: 4000, currencySymbol: "$", label: "United States" },
     insightHeading: "United States: Understanding Your Costs",
     costDrivers: [
-      { title: "SHRM Cost-per-Hire: $4,700 average", detail: "Industry benchmark for replacement cost" },
-      { title: "Background Checks: $60–180 standard", detail: "Required for most hospitality positions" },
+      { title: "Average Cost-per-Hire: $4,700", detail: "Industry benchmark for replacement cost" },
       { title: "At-Will Employment: No notice period mandate", detail: "Creates sudden departure risk" },
-      { title: "Productivity Loss: 52% of total cost", detail: "Cornell research on new-hire ramp-up" },
+      { title: "Productivity Loss: 52% of total cost", detail: "New-hire ramp-up research" },
+      { title: "High agency reliance in metro markets", detail: "Increases blended recruitment cost" },
     ],
-    source: "Cornell Center for Hospitality Research",
-    bottomText: "These regional factors are built into the calculations below. Every number is based on US-specific benchmarks from SHRM and the Cornell Center for Hospitality Research.",
+    source: "Bureau of Labor Statistics, AH&LA",
+    bottomText: "These regional factors are built into the calculations below. Every number is based on US-specific benchmarks from the Bureau of Labor Statistics and AH&LA.",
   },
   {
     id: "eu",

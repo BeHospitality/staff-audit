@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Activity, ChevronDown, ChevronUp, TrendingDown, Users, Clock, DollarSign, Target, ClipboardList, BarChart3, Mic } from "lucide-react";
+import { Activity, ChevronDown, ChevronUp, TrendingDown, Users, DollarSign, Target, ClipboardList, BarChart3, Mic, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,11 +24,12 @@ export default function ChurnCalculator() {
   const storedRegion = localStorage.getItem(STORAGE_KEY) as Region | null;
   const storedRegionData = storedRegion ? REGIONS.find(r => r.id === storedRegion) : null;
 
-  const [teamCapacity, setTeamCapacity] = useState(storedRegion === "ireland" ? 48 : 50);
+  const [teamCapacity, setTeamCapacity] = useState(storedRegion === "ireland" ? 160 : 50);
   const [churnVelocity, setChurnVelocity] = useState(storedRegion === "ireland" ? 30 : 50);
   const [baseSalary, setBaseSalary] = useState(storedRegionData?.defaults.baseSalary ?? 2400);
   const [rampMonths, setRampMonths] = useState(3);
   const [acqFriction, setAcqFriction] = useState(storedRegionData?.defaults.acqFriction ?? 2500);
+  const [agencySplit, setAgencySplit] = useState(60);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [currencySymbol, setCurrencySymbol] = useState(storedRegionData?.defaults.currencySymbol ?? "€");
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(storedRegion);
@@ -40,8 +41,9 @@ export default function ChurnCalculator() {
     setAcqFriction(defaults.acqFriction);
     setCurrencySymbol(defaults.currencySymbol);
     if (region === "ireland") {
-      setTeamCapacity(48);
+      setTeamCapacity(160);
       setChurnVelocity(30);
+      setAgencySplit(60);
     }
     setRegionConfirmed(true);
     setTimeout(() => {
@@ -60,8 +62,8 @@ export default function ChurnCalculator() {
   const fmt = (val: number) => formatCurrency(val, currencySymbol);
 
   const calc = useMemo(() => {
-    return calculateChurn(selectedRegion, teamCapacity, churnVelocity, baseSalary, acqFriction, rampMonths);
-  }, [selectedRegion, teamCapacity, churnVelocity, baseSalary, acqFriction, rampMonths]);
+    return calculateChurn(selectedRegion, teamCapacity, churnVelocity, baseSalary, acqFriction, rampMonths, agencySplit);
+  }, [selectedRegion, teamCapacity, churnVelocity, baseSalary, acqFriction, rampMonths, agencySplit]);
 
   const isIreland = selectedRegion === "ireland";
   const scoreColor = calc.stabilityScore <= 40 ? "text-destructive" : calc.stabilityScore <= 70 ? "text-primary" : "text-success";
@@ -118,12 +120,15 @@ export default function ChurnCalculator() {
                 <div className="grid lg:grid-cols-5 gap-8 lg:gap-12">
                   {/* Sliders */}
                   <div className="lg:col-span-3 space-y-7">
-                    <SliderInput label="Team Capacity" icon={<Users className="w-4 h-4" />} value={teamCapacity} onChange={setTeamCapacity} min={10} max={1000} step={5} display={`${teamCapacity} Staff`} />
-                    <SliderInput label="Churn Velocity — Annual Turnover Rate" icon={<TrendingDown className="w-4 h-4" />} value={churnVelocity} onChange={setChurnVelocity} min={5} max={200} step={1} display={`${churnVelocity}%`} />
-                    <SliderInput label="Base Monthly Compensation" icon={<DollarSign className="w-4 h-4" />} value={baseSalary} onChange={setBaseSalary} min={1500} max={10000} step={100} display={fmt(baseSalary)} />
+                    <SliderInput label="Total Staff Count" icon={<Users className="w-4 h-4" />} value={teamCapacity} onChange={setTeamCapacity} min={1} max={2000} step={1} display={`${teamCapacity} Staff`} />
+                    <SliderInput label="Annual Turnover Rate" icon={<TrendingDown className="w-4 h-4" />} value={churnVelocity} onChange={setChurnVelocity} min={5} max={80} step={1} display={`${churnVelocity}%`} />
+                    {isIreland && (
+                      <SliderInput label="% Recruited via Agency" icon={<Percent className="w-4 h-4" />} value={agencySplit} onChange={setAgencySplit} min={0} max={100} step={5} display={`${agencySplit}% Agency / ${100 - agencySplit}% Direct`} />
+                    )}
+                    <SliderInput label="Average Monthly Salary" icon={<DollarSign className="w-4 h-4" />} value={baseSalary} onChange={setBaseSalary} min={1800} max={6000} step={100} display={fmt(baseSalary)} />
                     {!isIreland && (
                       <>
-                        <SliderInput label="Ramp-Up (Months)" icon={<Clock className="w-4 h-4" />} value={rampMonths} onChange={setRampMonths} min={1} max={12} step={1} display={`${rampMonths} Mo`} />
+                        <SliderInput label="Ramp-Up (Months)" icon={<Target className="w-4 h-4" />} value={rampMonths} onChange={setRampMonths} min={1} max={12} step={1} display={`${rampMonths} Mo`} />
                         <SliderInput label="Acquisition Friction (Cost/Hire)" icon={<Target className="w-4 h-4" />} value={acqFriction} onChange={setAcqFriction} min={500} max={10000} step={100} display={fmt(acqFriction)} />
                       </>
                     )}
@@ -147,15 +152,17 @@ export default function ChurnCalculator() {
                       <p className="text-2xl md:text-3xl font-bold text-destructive">- {fmt(Math.round(calc.dailyBleed))} / DAY</p>
                     </div>
                     <div className="bg-primary/10 rounded-xl p-6 text-center border border-primary/20">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Annual Churn Tax</p>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Your Annual Turnover Cost</p>
                       <p className="text-4xl md:text-5xl font-bold text-primary">{fmt(Math.round(calc.totalAnnual))}</p>
                       <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                        Based on {calc.departures} annual departures at {fmt(calc.annualSalary)}/yr avg salary.
-                        {calc.perDeparture > 0 && <> Cost per departure: {fmt(calc.perDeparture)}.</>}
+                        Based on {calc.departures} departures × {fmt(calc.perDeparture)} each
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Monthly: {fmt(Math.round(calc.monthlyCost))}
                       </p>
                       {isIreland && (
                         <p className="text-xs text-muted-foreground mt-1 italic">
-                          Sources: ITIC, Fáilte Ireland, IHF, CSO
+                          Sources: IHF, Fáilte Ireland, CSO, ITIC
                         </p>
                       )}
                     </div>
