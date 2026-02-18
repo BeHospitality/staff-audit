@@ -23,7 +23,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<ChurnCalculator />} />
-          <Route path="/pulse" element={<ChurnCalculator />} />
+          <Route path="/pulse" element={<Navigate to="/pulse/survey" replace />} />
           <Route path="/pulse/survey" element={<PulseSurvey />} />
           <Route path="/pulse/login" element={<Login />} />
           <Route path="/pulse/signup" element={<Signup />} />
