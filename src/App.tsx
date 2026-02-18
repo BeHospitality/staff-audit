@@ -30,6 +30,7 @@ const App = () => (
           <Route path="/pulse/dashboard" element={<PulseDashboard />} />
           <Route path="/pulse/admin" element={<AdminDashboard />} />
           <Route path="/pulse/dossier/:code" element={<DossierPage />} />
+          <Route path="/thank-you/:leadId" element={<ThankYou />} />
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
