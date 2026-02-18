@@ -111,6 +111,14 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
 
       if (error) throw error;
 
+      // Create organization for pulse survey using vibe_check_code as org_code
+      await supabase
+        .from("organizations")
+        .upsert(
+          { org_name: propertyName.trim(), org_code: vibeCode, manager_email: email.trim().toLowerCase() },
+          { onConflict: "org_code" }
+        );
+
       // Trigger email edge function (fire-and-forget)
       supabase.functions.invoke("send-lead-emails", {
         body: { leadId: data.id, email: leadData.email, fullName: leadData.full_name, propertyName: leadData.property_name, vibeCheckCode: vibeCode },

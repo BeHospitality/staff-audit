@@ -24,7 +24,7 @@ export default function VibeCheckLinkSection({ vibeCheckCode, propertyName, full
     );
   }
 
-  const vibeCheckUrl = `https://vibecheck.be.ie/${vibeCheckCode}`;
+  const vibeCheckUrl = `${window.location.origin}/pulse/survey?org=${vibeCheckCode}`;
 
   async function handleCopy() {
     try {
