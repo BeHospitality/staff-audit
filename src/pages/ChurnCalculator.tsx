@@ -9,6 +9,7 @@ import ProtocolDossier from "@/components/calculator/ProtocolDossier";
 import PricingSection from "@/components/calculator/PricingSection";
 import RegionSelector, { RegionBadge, REGIONS, type Region, type RegionDefaults } from "@/components/calculator/RegionSelector";
 import ForensicBreakdown from "@/components/calculator/ForensicBreakdown";
+import LeadCaptureForm from "@/components/LeadCaptureForm";
 import { calculateChurn } from "@/lib/churnCalculations";
 
 function formatCurrency(val: number, prefix = "€") {
@@ -175,6 +176,9 @@ export default function ChurnCalculator() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Lead Capture Form */}
+            <LeadCaptureForm prefillStaffCount={teamCapacity} prefillTurnoverRate={churnVelocity} />
           </TabsContent>
 
           {/* ───── TAB 2: MASTERY ───── */}
@@ -192,6 +196,7 @@ export default function ChurnCalculator() {
             </div>
             <ProtocolDossier />
             <PricingSection onCTA={() => navigate("/pulse/signup")} />
+            <LeadCaptureForm prefillStaffCount={teamCapacity} prefillTurnoverRate={churnVelocity} />
           </TabsContent>
 
           {/* ───── TAB 3: DIY TOOLBOX ───── */}
@@ -219,6 +224,7 @@ export default function ChurnCalculator() {
               </Button>
               <p className="text-xs text-muted-foreground">No credit card required. See what's really happening.</p>
             </div>
+            <LeadCaptureForm prefillStaffCount={teamCapacity} prefillTurnoverRate={churnVelocity} />
           </TabsContent>
         </Tabs>
       </section>
