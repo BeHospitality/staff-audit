@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.get-dossier]
 verify_jwt = false
+
+[functions.send-lead-emails]
+verify_jwt = false

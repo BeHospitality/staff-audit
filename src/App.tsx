@@ -10,6 +10,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import DossierPage from "./pages/DossierPage";
+import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/pulse/dashboard" element={<PulseDashboard />} />
           <Route path="/pulse/admin" element={<AdminDashboard />} />
           <Route path="/pulse/dossier/:code" element={<DossierPage />} />
+          <Route path="/thank-you" element={<ThankYou />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

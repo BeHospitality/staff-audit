@@ -43,6 +43,72 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          biggest_challenge: string | null
+          created_at: string
+          dossier_pin: string | null
+          dossier_url: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string
+          property_name: string
+          report_sent_at: string | null
+          role: string | null
+          staff_count: number | null
+          status: string
+          turnover_rate: number | null
+          updated_at: string
+          vibe_check_code: string | null
+          vibe_check_requested: boolean | null
+          vibe_check_responses: number | null
+          vibe_check_total_staff: number | null
+        }
+        Insert: {
+          biggest_challenge?: string | null
+          created_at?: string
+          dossier_pin?: string | null
+          dossier_url?: string | null
+          email: string
+          full_name: string
+          id?: string
+          phone: string
+          property_name: string
+          report_sent_at?: string | null
+          role?: string | null
+          staff_count?: number | null
+          status?: string
+          turnover_rate?: number | null
+          updated_at?: string
+          vibe_check_code?: string | null
+          vibe_check_requested?: boolean | null
+          vibe_check_responses?: number | null
+          vibe_check_total_staff?: number | null
+        }
+        Update: {
+          biggest_challenge?: string | null
+          created_at?: string
+          dossier_pin?: string | null
+          dossier_url?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string
+          property_name?: string
+          report_sent_at?: string | null
+          role?: string | null
+          staff_count?: number | null
+          status?: string
+          turnover_rate?: number | null
+          updated_at?: string
+          vibe_check_code?: string | null
+          vibe_check_requested?: boolean | null
+          vibe_check_responses?: number | null
+          vibe_check_total_staff?: number | null
+        }
+        Relationships: []
+      }
       managers: {
         Row: {
           created_at: string
