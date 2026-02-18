@@ -20,95 +20,104 @@ export interface ChurnResult {
   loadedAnnualCost: number;
   totalAnnual: number;
   dailyBleed: number;
+  monthlyCost: number;
   perDeparture: number;
   stabilityScore: number;
   categories: CategoryBreakdown[];
   visibleCost: number;
   hiddenCost: number;
+  invisiblePercentage: number;
   regionSupported: boolean;
 }
 
-function calcIreland(teamSize: number, turnoverRate: number, baseMonthlySalary: number): ChurnResult {
+function calcIreland(
+  teamSize: number,
+  turnoverRate: number,
+  baseMonthlySalary: number,
+  agencySplit: number,
+): ChurnResult {
+  const directSplit = 100 - agencySplit;
   const departures = Math.round(teamSize * (turnoverRate / 100));
   const annualSalary = baseMonthlySalary * 12;
   const employerPRSI = annualSalary * 0.1125;
   const loadedAnnualCost = annualSalary + employerPRSI;
 
-  // Category 1: Recruitment & Admin — €2,600 per departure
-  const cat1CostPer = 2600;
-  const cat1Total = cat1CostPer * departures;
+  // Recruitment cost (blended)
+  const agencyRecruitmentCost = 3880; // Agency fee €3,500 + HR €200 + onboarding €180
+  const directRecruitmentCost = 1280; // Job boards €400 + HR screening €400 + manager interviews €300 + onboarding €180
+  const recruitmentCostPer = ((agencySplit / 100) * agencyRecruitmentCost) + ((directSplit / 100) * directRecruitmentCost);
+
+  const agencyHires = Math.round(departures * (agencySplit / 100));
+  const directHires = departures - agencyHires;
+
+  // Category 1: Recruitment & Onboarding
+  const cat1Total = departures * recruitmentCostPer;
   const cat1: CategoryBreakdown = {
-    label: "Recruitment & Admin",
-    costPerDeparture: cat1CostPer,
-    annualTotal: cat1Total,
+    label: "Recruitment & Onboarding",
+    costPerDeparture: Math.round(recruitmentCostPer),
+    annualTotal: Math.round(cat1Total),
     pct: 0,
     lineItems: [
-      { label: "Direct Costs (jobs.ie, Indeed Ireland)", amount: 400 },
-      { label: "Background Screening", amount: 150 },
-      { label: "HR Time (12 hours @ €42/hr)", amount: 504 },
-      { label: "Manager Time (6 hours @ €52/hr)", amount: 312 },
-      { label: "Onboarding Admin (PRSI, Pension, SSP setup)", amount: 1234 },
+      { label: `Agency recruitment (${agencySplit}%): ${agencyHires} hires × €3,880`, amount: agencyHires * agencyRecruitmentCost },
+      { label: `Direct recruitment (${directSplit}%): ${directHires} hires × €1,280`, amount: directHires * directRecruitmentCost },
     ],
-    source: "Based on ITIC March 2024 Cost Analysis and Excel Recruitment 2026 Salary Guide (€3,500 benchmark)",
+    source: "IHF, Excel Recruitment 2026 Salary Guide, ITIC March 2024",
   };
 
-  // Category 2: Training & Ramp-Up — €3,100 per departure
-  const cat2CostPer = 3100;
-  const cat2Total = cat2CostPer * departures;
+  // Category 2: Training & Compliance — €350 per departure
+  const trainingCostPer = 350;
+  const cat2Total = trainingCostPer * departures;
   const cat2: CategoryBreakdown = {
-    label: "Training & Ramp-Up",
-    costPerDeparture: cat2CostPer,
+    label: "Training & Compliance",
+    costPerDeparture: trainingCostPer,
     annualTotal: cat2Total,
     pct: 0,
     lineItems: [
-      { label: "Trainer Time (32 hours @ €30/hr)", amount: 960 },
-      { label: "Materials & Uniforms", amount: 280 },
-      { label: "Peer Mentoring (20 hours @ €24/hr)", amount: 480 },
-      { label: "Shadow Period (3 weeks dual payroll)", amount: 900 },
-      { label: "Productivity Ramp-Up Loss", amount: 480 },
+      { label: "Fire Safety", amount: 80 },
+      { label: "Manual Handling", amount: 60 },
+      { label: "HACCP / Food Safety", amount: 60 },
+      { label: "Uniform & Materials", amount: 150 },
     ],
-    source: "Based on Fáilte Ireland sector research and Shadow Hours methodology (dual payroll during training period)",
+    source: "Fáilte Ireland mandatory compliance requirements",
   };
 
-  // Category 3: Productivity Gap — €10,800 per departure
-  const cat3CostPer = 10800;
-  const cat3Total = cat3CostPer * departures;
+  // Category 3: Productivity Loss — €1,200 per departure
+  const productivityCostPer = 1200;
+  const cat3Total = productivityCostPer * departures;
   const cat3: CategoryBreakdown = {
-    label: "Productivity Gap",
-    costPerDeparture: cat3CostPer,
+    label: "Productivity Loss",
+    costPerDeparture: productivityCostPer,
     annualTotal: cat3Total,
     pct: 0,
     lineItems: [
-      { label: "Position Vacancy Cost (45 days @ 50%)", amount: 2475 },
-      { label: "Overtime Coverage (4 staff × 16hrs × 1.5x)", amount: 1728 },
-      { label: "Notice Period Productivity Loss (4 wks @ 30%)", amount: 720 },
-      { label: "Service Quality Impact (1% RevPAR, 2 months)", amount: 2400 },
-      { label: "Labor Market Scarcity Premium (4.2% unemployment)", amount: 630 },
-      { label: "Structural Labor Shortage Extension", amount: 2847 },
+      { label: "8–12 week ramp-up at 70% effectiveness", amount: 1200 },
     ],
-    source: "Based on CSO unemployment data (4.2%), IHF labor shortage research (29% hiring difficulty), Fáilte Ireland sector analysis (8.5% labor hour decline), and ITIC operational cost study",
+    source: "CSO avg weekly wage: €615/week, Fáilte Ireland sector analysis",
   };
 
-  // Category 4: Notice Period Overhead — €1,500 per departure
-  const cat4CostPer = 1500;
-  const cat4Total = cat4CostPer * departures;
+  // Category 4: Early Departure Risk — €800 per departure
+  const earlyDepartureCostPer = 800;
+  const cat4Total = earlyDepartureCostPer * departures;
   const cat4: CategoryBreakdown = {
-    label: "Notice Period Overhead",
-    costPerDeparture: cat4CostPer,
+    label: "Early Departure Risk",
+    costPerDeparture: earlyDepartureCostPer,
     annualTotal: cat4Total,
     pct: 0,
     lineItems: [
-      { label: "6-week notice @ 40% productivity loss", amount: 1440 },
-      { label: "Transition admin", amount: 60 },
+      { label: "20% failure rate × €3,990 sunk cost", amount: 800 },
     ],
-    source: "Based on Irish employment law standard notice periods and productivity research during exit transitions",
+    source: "IHF labour retention data, Fáilte Ireland 90-day attrition studies",
   };
 
-  const totalAnnual = cat1Total + cat2Total + cat3Total + cat4Total;
+  const totalAnnual = Math.round(cat1Total + cat2Total + cat3Total + cat4Total);
   const categories = [cat1, cat2, cat3, cat4].map(c => ({
     ...c,
     pct: totalAnnual > 0 ? Math.round((c.annualTotal / totalAnnual) * 100) : 0,
   }));
+
+  const visibleCost = Math.round(cat1Total);
+  const hiddenCost = totalAnnual - visibleCost;
+  const invisiblePercentage = totalAnnual > 0 ? Math.round((hiddenCost / totalAnnual) * 100) : 0;
 
   return {
     departures,
@@ -116,11 +125,13 @@ function calcIreland(teamSize: number, turnoverRate: number, baseMonthlySalary: 
     loadedAnnualCost,
     totalAnnual,
     dailyBleed: totalAnnual / 365,
+    monthlyCost: totalAnnual / 12,
     perDeparture: departures > 0 ? Math.round(totalAnnual / departures) : 0,
     stabilityScore: Math.max(0, Math.min(100, 100 - turnoverRate)),
     categories,
-    visibleCost: cat1Total,
-    hiddenCost: cat2Total + cat3Total + cat4Total,
+    visibleCost,
+    hiddenCost,
+    invisiblePercentage,
     regionSupported: true,
   };
 }
@@ -133,11 +144,14 @@ function calcGeneric(teamSize: number, turnoverRate: number, baseMonthlySalary: 
   const recruitmentCost = departures * acqFriction;
   const trainingCost = departures * (annualSalary * 0.25 * rampFactor);
   const productivityGap = departures * (annualSalary * 0.2756 * rampFactor);
-  const totalAnnual = recruitmentCost + trainingCost + productivityGap;
+  const totalAnnual = Math.round(recruitmentCost + trainingCost + productivityGap);
+
+  const visibleCost = recruitmentCost;
+  const hiddenCost = totalAnnual - visibleCost;
 
   const categories: CategoryBreakdown[] = [
     {
-      label: "Recruitment & Admin",
+      label: "Recruitment & Onboarding",
       costPerDeparture: departures > 0 ? Math.round(recruitmentCost / departures) : 0,
       annualTotal: recruitmentCost,
       pct: totalAnnual > 0 ? Math.round((recruitmentCost / totalAnnual) * 100) : 0,
@@ -168,11 +182,13 @@ function calcGeneric(teamSize: number, turnoverRate: number, baseMonthlySalary: 
     loadedAnnualCost: annualSalary,
     totalAnnual,
     dailyBleed: totalAnnual / 365,
+    monthlyCost: totalAnnual / 12,
     perDeparture: departures > 0 ? Math.round(totalAnnual / departures) : 0,
     stabilityScore: Math.max(0, Math.min(100, 100 - turnoverRate)),
     categories,
-    visibleCost: recruitmentCost,
-    hiddenCost: trainingCost + productivityGap,
+    visibleCost,
+    hiddenCost,
+    invisiblePercentage: totalAnnual > 0 ? Math.round((hiddenCost / totalAnnual) * 100) : 0,
     regionSupported: false,
   };
 }
@@ -184,10 +200,10 @@ export function calculateChurn(
   baseMonthlySalary: number,
   acqFriction: number,
   rampMonths: number,
+  agencySplit: number = 60,
 ): ChurnResult {
   if (region === "ireland") {
-    return calcIreland(teamSize, turnoverRate, baseMonthlySalary);
+    return calcIreland(teamSize, turnoverRate, baseMonthlySalary, agencySplit);
   }
-  // Other regions use generic for now
   return calcGeneric(teamSize, turnoverRate, baseMonthlySalary, acqFriction, rampMonths);
 }
