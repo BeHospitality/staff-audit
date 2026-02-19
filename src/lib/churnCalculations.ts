@@ -81,8 +81,8 @@ function calcIreland(
     source: "Fáilte Ireland mandatory compliance requirements",
   };
 
-  // Category 3: Productivity Loss — €1,200 per departure
-  const productivityCostPer = 1200;
+  // Category 3: Productivity Loss — scales with salary, calibrated so €2,400/mo = €1,200
+  const productivityCostPer = Math.round(Math.max(600, Math.min(2400, (baseMonthlySalary / 2400) * 1200)));
   const cat3Total = productivityCostPer * departures;
   const cat3: CategoryBreakdown = {
     label: "Productivity Loss",
@@ -90,9 +90,9 @@ function calcIreland(
     annualTotal: cat3Total,
     pct: 0,
     lineItems: [
-      { label: "8–12 week ramp-up at 70% effectiveness", amount: 1200 },
+      { label: `8–12 week ramp-up at 70% effectiveness (€${baseMonthlySalary}/mo salary)`, amount: productivityCostPer },
     ],
-    source: "CSO avg weekly wage: €615/week, Fáilte Ireland sector analysis",
+    source: "CSO avg weekly wage, Fáilte Ireland sector analysis",
   };
 
   // Category 4: Early Departure Risk — €800 per departure
