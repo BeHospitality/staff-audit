@@ -50,12 +50,12 @@ function calcIreland(
   const agencyHires = Math.round(departures * (agencySplit / 100));
   const directHires = departures - agencyHires;
 
-  // Category 1: Recruitment & Onboarding — use actual hire counts to avoid rounding mismatch
-  const cat1Total = (agencyHires * agencyRecruitmentCost) + (directHires * directRecruitmentCost);
+  // Category 1: Recruitment & Onboarding — use blended cost × departures for consistency
+  const cat1Total = Math.round(recruitmentCostPer) * departures;
   const cat1: CategoryBreakdown = {
     label: "Recruitment & Onboarding",
     costPerDeparture: Math.round(recruitmentCostPer),
-    annualTotal: Math.round(cat1Total),
+    annualTotal: cat1Total,
     pct: 0,
     lineItems: [
       { label: `Agency recruitment (${agencySplit}%): ${agencyHires} hires × €3,880`, amount: agencyHires * agencyRecruitmentCost },

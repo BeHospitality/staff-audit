@@ -69,6 +69,21 @@ export default function PulseSurvey() {
       question_4_spirit: answers.spirit || null,
       open_feedback: feedback || null,
     });
+
+    // Increment the vibe_check_responses counter on the matching lead
+    const { data: leadRow } = await supabase
+      .from("leads")
+      .select("id, vibe_check_responses")
+      .eq("vibe_check_code", orgCode)
+      .maybeSingle();
+
+    if (leadRow) {
+      await supabase
+        .from("leads")
+        .update({ vibe_check_responses: (leadRow.vibe_check_responses ?? 0) + 1 })
+        .eq("id", leadRow.id);
+    }
+
     setLoading(false);
     setSubmitted(true);
     localStorage.setItem(`pulse_submitted_${orgCode}`, new Date().toISOString());
