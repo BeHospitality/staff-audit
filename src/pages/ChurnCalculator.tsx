@@ -195,7 +195,7 @@ export default function ChurnCalculator() {
               <StatCard label="Implementation" value="90 Days" />
             </div>
             <ProtocolDossier />
-            <PricingSection onCTA={() => navigate("/pulse/signup")} />
+            <PricingSection onCTA={() => window.open("https://calendar.app.google/jnoS2WB8um1GHo1S9", "_blank", "noopener,noreferrer")} />
             <LeadCaptureForm prefillStaffCount={teamCapacity} prefillTurnoverRate={churnVelocity} />
           </TabsContent>
 
