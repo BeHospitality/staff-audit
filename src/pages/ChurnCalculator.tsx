@@ -94,9 +94,7 @@ export default function ChurnCalculator() {
           <Activity className="w-6 h-6 text-primary" />
           <span className="font-bold text-primary text-lg tracking-wide">Be Connect</span>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => navigate("/pulse/login")} className="text-muted-foreground hover:text-foreground">
-          Manager Login →
-        </Button>
+      {/* No public login link */}
       </nav>
 
       {/* Hero */}
@@ -121,6 +119,15 @@ export default function ChurnCalculator() {
       <section className="max-w-6xl mx-auto px-4 pb-16 animate-fade-in" ref={calculatorRef}>
         {regionData && (
           <RegionBadge region={regionData.name} flag={regionData.flag} onChangeRegion={handleChangeRegion} />
+        )}
+        {/* Context line */}
+        {selectedRegion && (
+          <p className="text-sm text-muted-foreground italic text-center mb-6">
+            {selectedRegion === "ireland" && "Default figures reflect a typical 3-4 star hotel in Ireland with 160 staff."}
+            {selectedRegion === "usa" && "Default figures reflect a typical private country club in the USA with 150 staff."}
+            {selectedRegion === "uae" && "Default figures reflect a typical 5-star resort in the UAE with 300 staff."}
+            {selectedRegion === "eu" && "Default figures reflect a typical 4-star hotel in Europe with 180 staff."}
+          </p>
         )}
         <Tabs defaultValue="diagnostic" className="w-full">
           <TabsList className="w-full max-w-md mx-auto mb-8 bg-secondary/60 h-12">
@@ -240,7 +247,7 @@ export default function ChurnCalculator() {
               </CardContent>
             </Card>
             <div className="text-center space-y-4">
-              <Button variant="gold" size="lg" className="text-base px-10 py-6 text-lg shadow-lg shadow-primary/20 hover-scale" onClick={() => navigate("/pulse/signup")}>
+              <Button variant="gold" size="lg" className="text-base px-10 py-6 text-lg shadow-lg shadow-primary/20 hover-scale" onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })}>
                 Start With Free Team Health Check →
               </Button>
               <p className="text-xs text-muted-foreground">No credit card required. See what's really happening.</p>

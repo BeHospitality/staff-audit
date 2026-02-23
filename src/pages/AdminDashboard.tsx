@@ -35,12 +35,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/pulse/login"); return; }
+      if (!session) { navigate("/admin"); return; }
 
       // Check admin via edge function
       const { data, error } = await supabase.functions.invoke("check-admin");
       if (error || !data?.is_admin) {
-        navigate("/pulse/dashboard");
+        navigate("/");
         return;
       }
 
@@ -51,7 +51,7 @@ export default function AdminDashboard() {
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") navigate("/pulse/login");
+      if (event === "SIGNED_OUT") navigate("/admin");
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -279,7 +279,7 @@ export default function AdminDashboard() {
                           {org.org_name}
                         </button>
                         {org.internal_notes && (
-                          <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[200px]">📝 {org.internal_notes}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 max-w-[200px]" title={org.internal_notes}>📝 {org.internal_notes}</p>
                         )}
                       </td>
                       <td className="p-3 text-center text-muted-foreground">{org.industry || "—"}</td>

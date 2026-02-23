@@ -7,8 +7,7 @@ import ChurnCalculator from "./pages/ChurnCalculator";
 import PulseSurvey from "./pages/PulseSurvey";
 import PulseDashboard from "./pages/PulseDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+import AdminLogin from "./pages/AdminLogin";
 import DossierPage from "./pages/DossierPage";
 import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
@@ -25,13 +24,15 @@ const App = () => (
           <Route path="/" element={<ChurnCalculator />} />
           <Route path="/pulse" element={<Navigate to="/pulse/survey" replace />} />
           <Route path="/pulse/survey" element={<PulseSurvey />} />
-          <Route path="/pulse/login" element={<Login />} />
-          <Route path="/pulse/signup" element={<Signup />} />
           <Route path="/pulse/dashboard" element={<PulseDashboard />} />
           <Route path="/pulse/admin" element={<AdminDashboard />} />
           <Route path="/pulse/dossier/:code" element={<DossierPage />} />
+          <Route path="/admin" element={<AdminLogin />} />
           <Route path="/thank-you/:leadId" element={<ThankYou />} />
           <Route path="/thank-you" element={<ThankYou />} />
+          {/* Redirect old auth routes */}
+          <Route path="/pulse/login" element={<Navigate to="/admin" replace />} />
+          <Route path="/pulse/signup" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
