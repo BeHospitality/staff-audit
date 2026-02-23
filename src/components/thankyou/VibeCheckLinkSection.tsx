@@ -24,7 +24,8 @@ export default function VibeCheckLinkSection({ vibeCheckCode, propertyName, full
     );
   }
 
-  const vibeCheckUrl = `${window.location.origin}/pulse/survey?org=${vibeCheckCode}`;
+  const baseUrl = import.meta.env.VITE_PUBLIC_URL || 'https://staff-audit.lovable.app';
+  const vibeCheckUrl = `${baseUrl}/pulse/survey?org=${vibeCheckCode}`;
 
   async function handleCopy() {
     try {
@@ -84,7 +85,7 @@ ${fullName}`
 
         {/* Link display */}
         <div className="bg-card border border-border rounded-lg p-4 text-center space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Your Unique Team Link</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Your Unique Team Link for {propertyName}</p>
           <p className="text-primary font-bold text-base md:text-lg break-all">{vibeCheckUrl}</p>
 
           {/* Share buttons — WhatsApp primary */}

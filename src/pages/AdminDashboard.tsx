@@ -18,6 +18,8 @@ interface AdminOrg {
   created_at: string;
   responseCount: number;
   healthScore: number;
+  contactName: string | null;
+  contactEmail: string | null;
 }
 
 export default function AdminDashboard() {
@@ -65,6 +67,15 @@ export default function AdminDashboard() {
       .select("organization_id, question_1_energy, question_2_support, question_3_growth, question_4_spirit")
       .eq("is_demo_data", false);
 
+    // Fetch leads to map org_code -> contact info
+    const { data: allLeads } = await supabase
+      .from("leads")
+      .select("full_name, email, vibe_check_code");
+    const leadMap = new Map<string, { full_name: string; email: string }>();
+    (allLeads || []).forEach((l: any) => {
+      if (l.vibe_check_code) leadMap.set(l.vibe_check_code, { full_name: l.full_name, email: l.email });
+    });
+
     const orgsWithStats: AdminOrg[] = allOrgs.map((o: any) => {
       const orgResponses = (allResponses || []).filter((r) => r.organization_id === o.id);
       const count = orgResponses.length;
@@ -76,6 +87,7 @@ export default function AdminDashboard() {
         };
         healthScore = Math.round((avg("question_1_energy") + avg("question_2_support") + avg("question_3_growth") + avg("question_4_spirit")) / 4);
       }
+      const lead = leadMap.get(o.org_code);
       return {
         id: o.id,
         org_name: o.org_name,
@@ -86,6 +98,8 @@ export default function AdminDashboard() {
         created_at: o.created_at,
         responseCount: count,
         healthScore,
+        contactName: lead?.full_name || null,
+        contactEmail: lead?.email || null,
       };
     });
 
@@ -260,7 +274,8 @@ export default function AdminDashboard() {
                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
                     <th className="text-left p-3 font-medium">Organization</th>
-                    <th className="text-center p-3 font-medium">Industry</th>
+                    <th className="text-left p-3 font-medium">Contact</th>
+                    <th className="text-center p-3 font-medium">Code</th>
                     <th className="text-center p-3 font-medium">Sign Up</th>
                     <th className="text-center p-3 font-medium">Responses</th>
                     <th className="text-center p-3 font-medium">Health</th>
@@ -282,7 +297,17 @@ export default function AdminDashboard() {
                           <p className="text-xs text-muted-foreground mt-0.5 max-w-[200px]" title={org.internal_notes}>📝 {org.internal_notes}</p>
                         )}
                       </td>
-                      <td className="p-3 text-center text-muted-foreground">{org.industry || "—"}</td>
+                      <td className="p-3">
+                        {org.contactName ? (
+                          <div>
+                            <p className="text-sm text-foreground">{org.contactName}</p>
+                            <p className="text-xs text-muted-foreground">{org.contactEmail}</p>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-center text-xs text-muted-foreground font-mono">{org.org_code}</td>
                       <td className="p-3 text-center text-muted-foreground">{new Date(org.created_at).toLocaleDateString()}</td>
                       <td className="p-3 text-center">{org.responseCount}</td>
                       <td className={`p-3 text-center font-bold ${org.healthScore > 0 ? scoreColor(org.healthScore) : "text-muted-foreground"}`}>
