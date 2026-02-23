@@ -78,9 +78,14 @@ export default function ResponseTracker({ leadId, initialResponses, staffCount }
             Our team is now analysing your results. Expect your PIN-protected report within 3-5 business days.
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground">
-            Need 80%+ for your report ({threshold} responses needed). Bookmark this page to check progress.
-          </p>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">
+              Need 80%+ for your report ({threshold} responses needed).
+            </p>
+            <p className="text-xs text-muted-foreground italic">
+              This updates in real-time. Bookmark this page to check back, or we'll include the results in your report.
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>

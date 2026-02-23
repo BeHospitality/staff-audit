@@ -8,7 +8,7 @@ import { getDemoOrgs } from "@/data/demoData";
 import OrgDetailView from "@/components/dashboard/OrgDetailView";
 import DossierList from "@/components/dashboard/DossierList";
 import GenerateDossierModal from "@/components/dashboard/GenerateDossierModal";
-import WelcomeModal from "@/components/dashboard/WelcomeModal";
+
 interface Org {
   id: string;
   org_name: string;
@@ -25,7 +25,6 @@ export default function PulseDashboard() {
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const [showDossiers, setShowDossiers] = useState(false);
   const [dossierModal, setDossierModal] = useState<{ orgId: string; orgName: string } | null>(null);
-  const [welcomeData, setWelcomeData] = useState<{ orgName: string; pulseLink: string; email?: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [demoMode, setDemoMode] = useState(() => localStorage.getItem("beconnect_demo_mode") === "true");
   const navigate = useNavigate();
@@ -41,25 +40,25 @@ export default function PulseDashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/pulse/login"); return; }
+      if (!session) { navigate("/admin"); return; }
+
+      // Must be admin to access dashboard
+      const { data } = await supabase.functions.invoke("check-admin");
+      if (!data?.is_admin) {
+        await supabase.auth.signOut();
+        navigate("/");
+        return;
+      }
+
       setUser(session.user);
+      setIsAdmin(true);
       await loadOrgs();
       setLoading(false);
-
-      supabase.functions.invoke("check-admin").then(({ data }) => {
-        if (data?.is_admin) setIsAdmin(true);
-      });
-
-      const raw = sessionStorage.getItem("welcome_data");
-      if (raw) {
-        setWelcomeData(JSON.parse(raw));
-        sessionStorage.removeItem("welcome_data");
-      }
     };
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") navigate("/pulse/login");
+      if (event === "SIGNED_OUT") navigate("/admin");
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -154,7 +153,6 @@ export default function PulseDashboard() {
           <span className="text-muted-foreground text-sm hidden md:inline">| Command Centre</span>
         </div>
         <div className="flex items-center gap-3">
-          {/* Demo Mode Toggle */}
           <button
             onClick={toggleDemo}
             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all duration-200 ${
@@ -214,7 +212,7 @@ export default function PulseDashboard() {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-bold text-lg truncate">{org.org_name}</h3>
+                        <h3 className="font-bold text-lg">{org.org_name}</h3>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${badge.cls}`}>{badge.text}</span>
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -250,14 +248,6 @@ export default function PulseDashboard() {
           orgId={dossierModal.orgId}
           orgName={dossierModal.orgName}
           onClose={() => { setDossierModal(null); loadOrgs(); }}
-        />
-      )}
-      {welcomeData && (
-        <WelcomeModal
-          orgName={welcomeData.orgName}
-          pulseLink={welcomeData.pulseLink}
-          email={welcomeData.email}
-          onClose={() => setWelcomeData(null)}
         />
       )}
     </div>
