@@ -18,34 +18,45 @@ function formatCurrency(val: number, prefix = "€") {
 
 const STORAGE_KEY = "staff-audit-region";
 
+const REGION_SOURCES: Record<Region, string> = {
+  ireland: "Sources: IHF, Fáilte Ireland, CSO, ITIC",
+  usa: "Sources: SHRM, BLS, AHLA, Cornell Center for Hospitality Research",
+  uae: "Sources: MOHRE, DET, KPMG, Emirates Academy, UAE Federal Labour Law",
+  eu: "Sources: Eurostat, HOTREC, EU Directives, national statistical offices",
+};
+
+const AED_TO_USD = 3.67;
+
 export default function ChurnCalculator() {
   const navigate = useNavigate();
   const calculatorRef = useRef<HTMLDivElement>(null);
 
   const storedRegion = localStorage.getItem(STORAGE_KEY) as Region | null;
   const storedRegionData = storedRegion ? REGIONS.find(r => r.id === storedRegion) : null;
+  const defaults = storedRegionData?.defaults;
 
-  const [teamCapacity, setTeamCapacity] = useState(storedRegion === "ireland" ? 160 : 50);
-  const [churnVelocity, setChurnVelocity] = useState(storedRegion === "ireland" ? 30 : 50);
-  const [baseSalary, setBaseSalary] = useState(storedRegionData?.defaults.baseSalary ?? 2400);
+  const [teamCapacity, setTeamCapacity] = useState(defaults?.defaultStaff ?? 50);
+  const [churnVelocity, setChurnVelocity] = useState(defaults?.defaultTurnover ?? 50);
+  const [baseSalary, setBaseSalary] = useState(defaults?.baseSalary ?? 2400);
   const [rampMonths, setRampMonths] = useState(3);
-  const [acqFriction, setAcqFriction] = useState(storedRegionData?.defaults.acqFriction ?? 2500);
-  const [agencySplit, setAgencySplit] = useState(60);
+  const [acqFriction, setAcqFriction] = useState(defaults?.acqFriction ?? 2500);
+  const [agencySplit, setAgencySplit] = useState(defaults?.defaultAgencySplit ?? 60);
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const [currencySymbol, setCurrencySymbol] = useState(storedRegionData?.defaults.currencySymbol ?? "€");
+  const [currencySymbol, setCurrencySymbol] = useState(defaults?.currencySymbol ?? "€");
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(storedRegion);
   const [regionConfirmed, setRegionConfirmed] = useState(!!storedRegion);
+
+  // Track current region defaults for slider ranges
+  const currentDefaults = selectedRegion ? REGIONS.find(r => r.id === selectedRegion)?.defaults : null;
 
   const handleRegionConfirmed = (region: Region, defaults: RegionDefaults) => {
     setSelectedRegion(region);
     setBaseSalary(defaults.baseSalary);
     setAcqFriction(defaults.acqFriction);
     setCurrencySymbol(defaults.currencySymbol);
-    if (region === "ireland") {
-      setTeamCapacity(160);
-      setChurnVelocity(30);
-      setAgencySplit(60);
-    }
+    setTeamCapacity(defaults.defaultStaff);
+    setChurnVelocity(defaults.defaultTurnover);
+    setAgencySplit(defaults.defaultAgencySplit);
     setRegionConfirmed(true);
     setTimeout(() => {
       calculatorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -66,10 +77,14 @@ export default function ChurnCalculator() {
     return calculateChurn(selectedRegion, teamCapacity, churnVelocity, baseSalary, acqFriction, rampMonths, agencySplit);
   }, [selectedRegion, teamCapacity, churnVelocity, baseSalary, acqFriction, rampMonths, agencySplit]);
 
+  const isSupported = selectedRegion === "ireland" || selectedRegion === "usa" || selectedRegion === "uae" || selectedRegion === "eu";
   const isIreland = selectedRegion === "ireland";
+  const isUAE = selectedRegion === "uae";
   const scoreColor = calc.stabilityScore <= 40 ? "text-destructive" : calc.stabilityScore <= 70 ? "text-primary" : "text-success";
   const scoreBg = calc.stabilityScore <= 40 ? "bg-destructive/15" : calc.stabilityScore <= 70 ? "bg-primary/15" : "bg-success/15";
   const scoreBadge = calc.stabilityScore <= 40 ? "Critical Alert" : calc.stabilityScore <= 70 ? "Moderate Risk" : "Stabilization Recommended";
+
+  const sourceLine = selectedRegion ? REGION_SOURCES[selectedRegion] : "";
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,13 +136,13 @@ export default function ChurnCalculator() {
                 <div className="grid lg:grid-cols-5 gap-8 lg:gap-12">
                   {/* Sliders */}
                   <div className="lg:col-span-3 space-y-7">
-                    <SliderInput label="Total Staff Count" icon={<Users className="w-4 h-4" />} value={teamCapacity} onChange={setTeamCapacity} min={1} max={2000} step={1} display={`${teamCapacity} Staff`} />
-                    <SliderInput label="Annual Turnover Rate" icon={<TrendingDown className="w-4 h-4" />} value={churnVelocity} onChange={setChurnVelocity} min={5} max={80} step={1} display={`${churnVelocity}%`} />
-                    {isIreland && (
-                      <SliderInput label="% Recruited via Agency" icon={<Percent className="w-4 h-4" />} value={agencySplit} onChange={setAgencySplit} min={0} max={100} step={5} display={`${agencySplit}% Agency / ${100 - agencySplit}% Direct`} />
+                    <SliderInput label="Total Staff Count" icon={<Users className="w-4 h-4" />} value={teamCapacity} onChange={setTeamCapacity} min={1} max={currentDefaults?.staffMax ?? 500} step={1} display={`${teamCapacity} Staff`} />
+                    <SliderInput label="Annual Turnover Rate" icon={<TrendingDown className="w-4 h-4" />} value={churnVelocity} onChange={setChurnVelocity} min={currentDefaults?.turnoverMin ?? 5} max={currentDefaults?.turnoverMax ?? 80} step={1} display={`${churnVelocity}%`} />
+                    {isSupported && (
+                      <SliderInput label="% Recruited via Agency" icon={<Percent className="w-4 h-4" />} value={agencySplit} onChange={setAgencySplit} min={currentDefaults?.agencyMin ?? 0} max={100} step={5} display={`${agencySplit}% Agency / ${100 - agencySplit}% Direct`} />
                     )}
-                    <SliderInput label="Average Monthly Salary" icon={<DollarSign className="w-4 h-4" />} value={baseSalary} onChange={setBaseSalary} min={1800} max={6000} step={100} display={fmt(baseSalary)} />
-                    {!isIreland && (
+                    <SliderInput label="Average Monthly Salary" icon={<DollarSign className="w-4 h-4" />} value={baseSalary} onChange={setBaseSalary} min={currentDefaults?.salaryMin ?? 1800} max={currentDefaults?.salaryMax ?? 6000} step={100} display={fmt(baseSalary)} />
+                    {!isSupported && (
                       <>
                         <SliderInput label="Ramp-Up (Months)" icon={<Target className="w-4 h-4" />} value={rampMonths} onChange={setRampMonths} min={1} max={12} step={1} display={`${rampMonths} Mo`} />
                         <SliderInput label="Acquisition Friction (Cost/Hire)" icon={<Target className="w-4 h-4" />} value={acqFriction} onChange={setAcqFriction} min={500} max={10000} step={100} display={fmt(acqFriction)} />
@@ -151,27 +166,33 @@ export default function ChurnCalculator() {
                     <div className="bg-destructive/10 rounded-xl p-5 text-center">
                       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Daily Bleed</p>
                       <p className="text-2xl md:text-3xl font-bold text-destructive">- {fmt(Math.round(calc.dailyBleed))} / DAY</p>
+                      {isUAE && (
+                        <p className="text-xs text-muted-foreground mt-1">(${Math.round(calc.dailyBleed / AED_TO_USD).toLocaleString()} USD)</p>
+                      )}
                     </div>
                     <div className="bg-primary/10 rounded-xl p-6 text-center border border-primary/20">
                       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Your Annual Turnover Cost</p>
                       <p className="text-4xl md:text-5xl font-bold text-primary">{fmt(Math.round(calc.totalAnnual))}</p>
+                      {isUAE && (
+                        <p className="text-sm text-muted-foreground mt-1">(~${Math.round(calc.totalAnnual / AED_TO_USD).toLocaleString()} USD)</p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
                         Based on {calc.departures} departures × {fmt(calc.perDeparture)} each
+                        {isUAE && ` (~$${Math.round(calc.perDeparture / AED_TO_USD).toLocaleString()} USD)`}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         Monthly: {fmt(Math.round(calc.monthlyCost))}
+                        {isUAE && ` (~$${Math.round(calc.monthlyCost / AED_TO_USD).toLocaleString()} USD)`}
                       </p>
-                      {isIreland && (
-                        <p className="text-xs text-muted-foreground mt-1 italic">
-                          Sources: IHF, Fáilte Ireland, CSO, ITIC
-                        </p>
+                      {sourceLine && (
+                        <p className="text-xs text-muted-foreground mt-1 italic">{sourceLine}</p>
                       )}
                     </div>
                     <button onClick={() => setShowBreakdown(!showBreakdown)} className="w-full flex items-center justify-center gap-2 text-sm text-primary font-semibold hover:underline transition-colors">
                       {showBreakdown ? "Hide" : "View"} Forensic Breakdown
                       {showBreakdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
-                    <ForensicBreakdown calc={calc} currency={currencySymbol} visible={showBreakdown} />
+                    <ForensicBreakdown calc={calc} currency={currencySymbol} visible={showBreakdown} region={selectedRegion} />
                   </div>
                 </div>
               </CardContent>

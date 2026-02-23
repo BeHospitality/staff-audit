@@ -10,6 +10,15 @@ export interface RegionDefaults {
   acqFriction: number;
   currencySymbol: string;
   label: string;
+  defaultStaff: number;
+  defaultTurnover: number;
+  defaultAgencySplit: number;
+  staffMax: number;
+  turnoverMax: number;
+  turnoverMin: number;
+  salaryMin: number;
+  salaryMax: number;
+  agencyMin: number;
 }
 
 interface CostDriver {
@@ -33,7 +42,7 @@ const REGIONS: RegionData[] = [
     id: "ireland",
     flag: "🇮🇪",
     name: "Ireland",
-    defaults: { baseSalary: 2400, acqFriction: 2600, currencySymbol: "€", label: "Ireland" },
+    defaults: { baseSalary: 2400, acqFriction: 2600, currencySymbol: "€", label: "Ireland", defaultStaff: 160, defaultTurnover: 30, defaultAgencySplit: 60, staffMax: 500, turnoverMax: 60, turnoverMin: 5, salaryMin: 1800, salaryMax: 5000, agencyMin: 0 },
     insightHeading: "Ireland: Understanding Your Costs",
     costDrivers: [
       { title: "Living Wage: €14.80/hour (2026)", detail: "Increases baseline labor cost across all roles" },
@@ -49,37 +58,37 @@ const REGIONS: RegionData[] = [
     id: "usa",
     flag: "🇺🇸",
     name: "United States",
-    defaults: { baseSalary: 3200, acqFriction: 4000, currencySymbol: "$", label: "United States" },
+    defaults: { baseSalary: 3500, acqFriction: 4000, currencySymbol: "$", label: "United States", defaultStaff: 150, defaultTurnover: 28, defaultAgencySplit: 40, staffMax: 500, turnoverMax: 80, turnoverMin: 5, salaryMin: 2500, salaryMax: 8000, agencyMin: 0 },
     insightHeading: "United States: Understanding Your Costs",
     costDrivers: [
-      { title: "Average Cost-per-Hire: $4,700", detail: "Industry benchmark for replacement cost" },
+      { title: "Average Cost-per-Hire: $4,700", detail: "SHRM benchmark; hospitality ~$2,700 entry-level" },
       { title: "At-Will Employment: No notice period mandate", detail: "Creates sudden departure risk" },
-      { title: "Productivity Loss: 52% of total cost", detail: "New-hire ramp-up research" },
+      { title: "Background Checks: Standard practice", detail: "Criminal, reference, and drug screening on every hire" },
       { title: "High agency reliance in metro markets", detail: "Increases blended recruitment cost" },
     ],
-    source: "Bureau of Labor Statistics, AH&LA",
-    bottomText: "These regional factors are built into the calculations below. Every number is based on US-specific benchmarks from the Bureau of Labor Statistics and AH&LA.",
+    source: "SHRM 2025/2026, BLS JOLTS, AHLA, Cornell Center for Hospitality Research",
+    bottomText: "These regional factors are built into the calculations below. Every number is based on US-specific benchmarks from SHRM, the Bureau of Labor Statistics, AHLA, and Cornell Center for Hospitality Research.",
   },
   {
     id: "eu",
     flag: "🇪🇺",
-    name: "European Union",
-    defaults: { baseSalary: 2600, acqFriction: 3000, currencySymbol: "€", label: "European Union" },
-    insightHeading: "European Union: Understanding Your Costs",
+    name: "Europe",
+    defaults: { baseSalary: 2800, acqFriction: 3000, currencySymbol: "€", label: "Europe", defaultStaff: 180, defaultTurnover: 25, defaultAgencySplit: 45, staffMax: 500, turnoverMax: 50, turnoverMin: 5, salaryMin: 1500, salaryMax: 5000, agencyMin: 0 },
+    insightHeading: "Europe: Understanding Your Costs",
     costDrivers: [
-      { title: "Labor Shortage: 250K missing workers (Italy)", detail: "Severe scarcity across member states" },
-      { title: "High Social Charges: 32–45% depending on country", detail: "Significantly increases true labor cost" },
+      { title: "Labour Shortage: 250K+ missing workers", detail: "Severe scarcity across member states" },
+      { title: "High Social Charges: 32–45% by country", detail: "Significantly increases true labour cost" },
       { title: "Notice Periods: 4–12 weeks standard", detail: "Extended transition creates overlap costs" },
-      { title: "Vacancy Duration: Extended due to scarcity", detail: "Average 60+ days to fill roles" },
+      { title: "Vacancy Duration: 60+ days average", detail: "Extended due to talent scarcity" },
     ],
-    source: "HOTREC Skills & Labour Report 2026",
-    bottomText: "These regional factors are built into the calculations below. Every number is based on EU-wide benchmarks from HOTREC and the European Commission Labour Market reports.",
+    source: "Eurostat, HOTREC, Destatis, INSEE, ONS, EU Framework Directive 89/391/EEC",
+    bottomText: "These regional factors are built into the calculations below. Every number is based on EU-wide benchmarks from Eurostat, HOTREC, and national statistical offices. European averages — contact us for country-specific analysis.",
   },
   {
     id: "uae",
     flag: "🇦🇪",
     name: "United Arab Emirates",
-    defaults: { baseSalary: 3500, acqFriction: 5000, currencySymbol: "AED ", label: "UAE" },
+    defaults: { baseSalary: 5500, acqFriction: 5000, currencySymbol: "AED ", label: "UAE", defaultStaff: 300, defaultTurnover: 33, defaultAgencySplit: 70, staffMax: 1000, turnoverMax: 60, turnoverMin: 10, salaryMin: 2000, salaryMax: 15000, agencyMin: 20 },
     insightHeading: "United Arab Emirates: Understanding Your Costs",
     costDrivers: [
       { title: "Zero-Fee Law: Employer pays ALL visa costs", detail: "AED 5,000–11,000 per hire minimum" },
@@ -87,8 +96,8 @@ const REGIONS: RegionData[] = [
       { title: "End-of-Service Gratuity: 21–30 days per year", detail: "Mandatory payout on departure" },
       { title: "Mandatory Benefits: Health insurance, flights", detail: "Annual return flights + medical cover" },
     ],
-    source: "UAE Federal Decree-Law No. 33/2021",
-    bottomText: "These regional factors are built into the calculations below. Every number is based on UAE-specific benchmarks from Federal labour regulations and regional hospitality research.",
+    source: "MOHRE, DET, KPMG Dubai 2025, Emirates Academy, UAE Federal Labour Law (Decree-Law No. 33/2021)",
+    bottomText: "These regional factors are built into the calculations below. Every number is based on UAE-specific benchmarks from Federal labour regulations, MOHRE, and regional hospitality research.",
   },
 ];
 
@@ -108,7 +117,6 @@ export default function RegionSelector({ onRegionConfirmed, onChangeRegion, isCo
 
   const selectedRegion = REGIONS.find((r) => r.id === selected);
 
-  // Sync with parent when region is cleared
   useEffect(() => {
     if (!currentRegion) {
       setStep(1);
@@ -135,7 +143,6 @@ export default function RegionSelector({ onRegionConfirmed, onChangeRegion, isCo
     }
   };
 
-  // If already confirmed, don't render the selector
   if (isConfirmed) return null;
 
   return (
@@ -144,7 +151,6 @@ export default function RegionSelector({ onRegionConfirmed, onChangeRegion, isCo
         <CardContent className="p-8 md:p-10">
           {step === 1 && (
             <div className="animate-fade-in" key="step1">
-              {/* Step 1: Region Selection */}
               <div className="text-center mb-10">
                 <Globe className="w-10 h-10 text-primary mx-auto mb-4" />
                 <h2 className="text-2xl md:text-[28px] font-bold text-foreground mb-3">
@@ -172,7 +178,6 @@ export default function RegionSelector({ onRegionConfirmed, onChangeRegion, isCo
 
           {step === 2 && selectedRegion && (
             <div className="animate-fade-in" key="step2" ref={calcRef}>
-              {/* Step 2: Regional Insight */}
               <button
                 onClick={handleBack}
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
