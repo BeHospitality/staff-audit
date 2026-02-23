@@ -1,12 +1,20 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Lightbulb } from "lucide-react";
 import type { ChurnResult, CategoryBreakdown } from "@/lib/churnCalculations";
+import type { Region } from "@/components/calculator/RegionSelector";
 
 function formatCurrency(val: number, prefix = "€") {
   return prefix + val.toLocaleString("en-IE", { maximumFractionDigits: 0 });
 }
 
-const CATEGORY_ICONS = ["💰", "📚", "📉", "⚠️"];
+const CATEGORY_ICONS = ["💰", "📚", "📉", "⚠️", "🏠", "📋"];
+
+const REGION_SOURCE_LINE: Record<Region, string> = {
+  ireland: "Sources: IHF, Fáilte Ireland, CSO EHECS 2025, ITIC, Excel Recruitment 2026",
+  usa: "Sources: SHRM 2025/2026, BLS JOLTS, AHLA, Cornell Center for Hospitality Research, NRA",
+  uae: "Sources: MOHRE, DET, KPMG Dubai 2025, Emirates Academy, UAE Federal Labour Law (Decree-Law No. 33/2021)",
+  eu: "Sources: Eurostat, HOTREC, Destatis, INSEE, ONS, ISTAT, EU Directive 89/391/EEC",
+};
 
 function CategoryRow({ cat, currency, icon, defaultOpen = false }: { cat: CategoryBreakdown; currency: string; icon: string; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -48,10 +56,13 @@ interface ForensicBreakdownProps {
   calc: ChurnResult;
   currency: string;
   visible: boolean;
+  region?: Region | null;
 }
 
-export default function ForensicBreakdown({ calc, currency, visible }: ForensicBreakdownProps) {
+export default function ForensicBreakdown({ calc, currency, visible, region }: ForensicBreakdownProps) {
   if (!visible) return null;
+
+  const sourceLine = region ? REGION_SOURCE_LINE[region] : REGION_SOURCE_LINE.ireland;
 
   return (
     <div className="space-y-3 animate-fade-in">
@@ -61,7 +72,7 @@ export default function ForensicBreakdown({ calc, currency, visible }: ForensicB
 
       <div className="text-right">
         <p className="text-xs text-muted-foreground italic">
-          Sources: IHF, Fáilte Ireland, CSO EHECS 2025, ITIC, Excel Recruitment 2026
+          {sourceLine}
         </p>
       </div>
 
@@ -81,7 +92,9 @@ export default function ForensicBreakdown({ calc, currency, visible }: ForensicB
             <p className="text-muted-foreground">But <span className="font-semibold text-destructive">miss</span>:</p>
             <p className="text-lg font-bold text-destructive">{formatCurrency(Math.round(calc.hiddenCost), currency)}</p>
             <p className="text-xs text-muted-foreground">
-              Hidden in training waste, productivity gaps, and people walking out in 90 days
+              {region === "uae"
+                ? "Hidden in training waste, productivity gaps, housing costs, and visa/gratuity obligations"
+                : "Hidden in training waste, productivity gaps, and people walking out in 90 days"}
             </p>
           </div>
         </div>
