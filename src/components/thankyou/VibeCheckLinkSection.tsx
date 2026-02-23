@@ -24,7 +24,7 @@ export default function VibeCheckLinkSection({ vibeCheckCode, propertyName, full
     );
   }
 
-  const baseUrl = import.meta.env.VITE_PUBLIC_URL || 'https://staff-audit.lovable.app';
+  const baseUrl = import.meta.env.VITE_PUBLIC_URL || 'https://staff-audit.be.ie';
   const vibeCheckUrl = `${baseUrl}/pulse/survey?org=${vibeCheckCode}`;
 
   async function handleCopy() {
