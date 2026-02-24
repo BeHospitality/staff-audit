@@ -120,8 +120,18 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
         );
 
       // Trigger email edge function (fire-and-forget)
+      const baseUrl = import.meta.env.VITE_PUBLIC_URL || 'https://staff-audit.be.ie';
       supabase.functions.invoke("send-lead-emails", {
-        body: { leadId: data.id, email: leadData.email, fullName: leadData.full_name, propertyName: leadData.property_name, vibeCheckCode: vibeCode },
+        body: {
+          contactName: leadData.full_name,
+          contactEmail: leadData.email,
+          propertyName: leadData.property_name,
+          vibeCheckLink: `${baseUrl}/pulse/survey?org=${vibeCode}`,
+          phone: formattedPhone,
+          staffCount: staffNum,
+          turnoverRate: turnoverNum,
+          vibeCheckCode: vibeCode,
+        },
       }).catch(() => {});
 
       navigate(`/thank-you?id=${data.id}`);
