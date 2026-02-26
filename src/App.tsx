@@ -10,6 +10,9 @@ import VibeCheck from "./pages/VibeCheck";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import DossierPage from "./pages/DossierPage";
+import DossierIndex from "./pages/admin/DossierIndex";
+import DossierView from "./pages/admin/DossierView";
+import SharedReport from "./pages/report/SharedReport";
 import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
 
@@ -30,6 +33,9 @@ const App = () => (
           <Route path="/pulse/dossier/:code" element={<DossierPage />} />
           <Route path="/vibe/:code" element={<VibeCheck />} />
           <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/dossier" element={<DossierIndex />} />
+          <Route path="/admin/dossier/:leadId" element={<DossierView />} />
+          <Route path="/report/:token" element={<SharedReport />} />
           <Route path="/thank-you/:leadId" element={<ThankYou />} />
           <Route path="/thank-you" element={<ThankYou />} />
           {/* Redirect old auth routes */}

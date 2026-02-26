@@ -268,6 +268,41 @@ export type Database = {
           },
         ]
       }
+      shared_reports: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          lead_id: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          lead_id?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          lead_id?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_reports_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
