@@ -275,6 +275,8 @@ export type Database = {
           expires_at: string | null
           id: string
           lead_id: string | null
+          pin_hash: string | null
+          pin_salt: string | null
           token: string
         }
         Insert: {
@@ -283,6 +285,8 @@ export type Database = {
           expires_at?: string | null
           id?: string
           lead_id?: string | null
+          pin_hash?: string | null
+          pin_salt?: string | null
           token: string
         }
         Update: {
@@ -291,6 +295,8 @@ export type Database = {
           expires_at?: string | null
           id?: string
           lead_id?: string | null
+          pin_hash?: string | null
+          pin_salt?: string | null
           token?: string
         }
         Relationships: [
