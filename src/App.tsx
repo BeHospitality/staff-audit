@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ChurnCalculator from "./pages/ChurnCalculator";
 import PulseSurvey from "./pages/PulseSurvey";
 import PulseDashboard from "./pages/PulseDashboard";
+import VibeCheck from "./pages/VibeCheck";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import DossierPage from "./pages/DossierPage";
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/pulse/dashboard" element={<PulseDashboard />} />
           <Route path="/pulse/admin" element={<AdminDashboard />} />
           <Route path="/pulse/dossier/:code" element={<DossierPage />} />
+          <Route path="/vibe/:code" element={<VibeCheck />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/thank-you/:leadId" element={<ThankYou />} />
           <Route path="/thank-you" element={<ThankYou />} />
