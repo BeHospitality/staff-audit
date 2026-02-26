@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { generatePin, generateSalt, hashPin } from "@/utils/pinUtils";
 import AdminRouteGuard from "@/components/admin/AdminRouteGuard";
 import VibeScoreCard from "@/components/admin/VibeScoreCard";
 import BreakdownTable from "@/components/admin/BreakdownTable";
@@ -8,7 +9,7 @@ import RiskFlags from "@/components/admin/RiskFlags";
 import HubCTA from "@/components/admin/HubCTA";
 import { Button } from "@/components/ui/button";
 import { groupByField, type VibeResponse } from "@/utils/dossierCalculations";
-import { Activity, ArrowLeft, Eye, EyeOff, Download, Link2, Loader2 } from "lucide-react";
+import { Activity, ArrowLeft, Eye, EyeOff, Download, Link2, Loader2, Copy, CheckCircle2, X, RefreshCw } from "lucide-react";
 import jsPDF from "jspdf";
 
 interface LeadData {
@@ -31,9 +32,13 @@ export default function DossierView() {
   const [responses, setResponses] = useState<VibeResponse[]>([]);
   const [shareable, setShareable] = useState(false);
   const [shareLink, setShareLink] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const shareableRef = useRef<HTMLDivElement>(null);
+
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareModalData, setShareModalData] = useState<{ url: string; pin: string; expiresAt: string } | null>(null);
+  const [generatingShare, setGeneratingShare] = useState(false);
 
   useEffect(() => {
     if (!leadId) return;
@@ -68,21 +73,36 @@ export default function DossierView() {
     load();
   }, [leadId]);
 
-  const generateShareLink = async () => {
+  const handleGenerateShareLink = async (regenerate = false) => {
     if (!lead) return;
-    setGenerating(true);
+    setGeneratingShare(true);
+
     const token = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    const rawPin = generatePin();
+    const salt = generateSalt();
+    const hash = await hashPin(rawPin, salt);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
     const { data: { session } } = await supabase.auth.getSession();
+
     await supabase.from("shared_reports" as any).insert({
       lead_id: lead.id,
       token,
       created_by: session?.user.email || "admin",
-      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      expires_at: expiresAt.toISOString(),
+      pin_hash: hash,
+      pin_salt: salt,
     });
-    const link = `${window.location.origin}/report/${token}`;
-    setShareLink(link);
-    setGenerating(false);
-    navigator.clipboard.writeText(link);
+
+    const url = `${window.location.origin}/report/${token}`;
+    setShareLink(url);
+    setShareModalData({
+      url,
+      pin: rawPin,
+      expiresAt: expiresAt.toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" }),
+    });
+    setShowShareModal(true);
+    setGeneratingShare(false);
   };
 
   const exportPDF = () => {
@@ -108,7 +128,6 @@ export default function DossierView() {
     doc.text(new Date().toLocaleDateString(), w / 2, y, { align: "center" });
     y += 15;
 
-    // Overall scores
     const { calcOverallScores, questionLabels } = require("@/utils/dossierCalculations");
     const scores = calcOverallScores(responses);
     doc.setFontSize(14);
@@ -124,7 +143,6 @@ export default function DossierView() {
     });
     y += 10;
 
-    // Department breakdown
     const depts = groupByField(responses, "department");
     if (depts.length > 0) {
       doc.setFontSize(13);
@@ -139,7 +157,6 @@ export default function DossierView() {
       y += 10;
     }
 
-    // Risk flags
     const { generateRiskFlags } = require("@/utils/dossierCalculations");
     const flags = generateRiskFlags(responses);
     if (flags.length > 0) {
@@ -156,7 +173,6 @@ export default function DossierView() {
       });
     }
 
-    // Hub CTA page
     doc.addPage();
     y = 30;
     doc.setFontSize(16);
@@ -235,23 +251,11 @@ export default function DossierView() {
               {shareable ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
               {shareable ? "Admin View" : "Shareable View"}
             </Button>
-            <Button variant="outline" size="sm" onClick={exportPDF}>
-              <Download className="w-4 h-4 mr-1" /> Export PDF
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={generateShareLink}
-              disabled={generating}
-            >
-              <Link2 className="w-4 h-4 mr-1" />
-              {shareLink ? "Copy Link" : "Generate Link"}
-            </Button>
           </div>
         </nav>
 
         <main className="max-w-4xl mx-auto p-4 md:p-8 space-y-8" ref={shareableRef}>
-          {/* Section 1: Lead Summary (admin only) */}
+          {/* Admin lead summary */}
           {!shareable && (
             <div className="bg-card border border-border rounded-lg p-5 md:p-6 space-y-3">
               <h2 className="text-xl font-bold">{lead.property_name}</h2>
@@ -317,25 +321,12 @@ export default function DossierView() {
             </div>
           ) : (
             <>
-              {/* Section 2: Overall Vibe Score */}
               <VibeScoreCard responses={responses} />
-
-              {/* Section 3: Department Breakdown */}
               <BreakdownTable title="Department Breakdown" segments={deptBreakdown} shareable={shareable} />
-
-              {/* Section 4: Role Level Breakdown */}
               <BreakdownTable title="Role Level Breakdown" segments={roleBreakdown} shareable={shareable} />
-
-              {/* Section 5: Tenure Breakdown */}
               <BreakdownTable title="Tenure Breakdown" segments={tenureBreakdown} shareable={shareable} />
-
-              {/* Section 6: Employment Type Breakdown */}
               <BreakdownTable title="Employment Type Breakdown" segments={empTypeBreakdown} shareable={shareable} />
-
-              {/* Section 7: Risk Flags */}
               <RiskFlags responses={responses} />
-
-              {/* Hub CTA (shareable only) */}
               {shareable && (
                 <HubCTA
                   responses={responses}
@@ -347,23 +338,88 @@ export default function DossierView() {
             </>
           )}
 
-          {shareLink && (
-            <div className="bg-secondary/50 border border-border rounded-lg p-4 text-sm">
-              <p className="text-muted-foreground mb-1">Shareable Link (expires in 30 days):</p>
-              <div className="flex items-center gap-2">
-                <code className="text-foreground text-xs flex-1 truncate">{shareLink}</code>
+          {/* Share This Dossier section */}
+          <div className="bg-card border border-border rounded-lg p-5 md:p-6 space-y-3">
+            <h3 className="font-semibold">Share This Dossier</h3>
+            <Button
+              variant="gold"
+              className="w-full"
+              onClick={() => shareLink ? setShowShareModal(true) : handleGenerateShareLink()}
+              disabled={generatingShare}
+            >
+              {generatingShare ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Link2 className="w-4 h-4 mr-2" />}
+              {shareLink ? "View Shareable Link" : "Generate Shareable Link"}
+            </Button>
+            <button
+              onClick={exportPDF}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 w-full text-center block"
+            >
+              Need a PDF copy? Export PDF ↓
+            </button>
+          </div>
+        </main>
+      </div>
+
+      {/* Share Link Modal */}
+      {showShareModal && shareModalData && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md animate-fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-primary">
+                <CheckCircle2 className="w-5 h-5" />
+                <span className="font-bold">Shareable Link Created</span>
+              </div>
+              <button onClick={() => setShowShareModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Link</label>
+                <div className="flex items-center gap-2">
+                  <input readOnly value={shareModalData.url} className="flex-1 bg-secondary border border-border rounded-lg px-3 py-2 text-xs text-foreground truncate" />
+                  <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(shareModalData.url); }}>
+                    <Copy className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Access PIN</label>
+                <div className="flex items-center gap-2">
+                  <div className="text-3xl font-mono font-bold text-primary tracking-[0.3em]">{shareModalData.pin}</div>
+                  <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(shareModalData.pin); }}>
+                    <Copy className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-secondary/50 border border-border rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">
+                  ⚠️ Save this PIN now — it cannot be retrieved later. You'll share it with the property contact during your call.
+                </p>
+              </div>
+
+              <p className="text-xs text-muted-foreground">Expires: {shareModalData.expiresAt}</p>
+
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setShowShareModal(false)}>
+                  Done
+                </Button>
                 <Button
                   variant="outline"
-                  size="sm"
-                  onClick={() => navigator.clipboard.writeText(shareLink)}
+                  className="flex-1"
+                  onClick={() => handleGenerateShareLink(true)}
+                  disabled={generatingShare}
                 >
-                  Copy
+                  <RefreshCw className="w-3.5 h-3.5 mr-1" /> Regenerate
                 </Button>
               </div>
             </div>
-          )}
-        </main>
-      </div>
+          </div>
+        </div>
+      )}
     </AdminRouteGuard>
   );
 }

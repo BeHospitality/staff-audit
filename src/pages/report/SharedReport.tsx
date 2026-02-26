@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { hashPin } from "@/utils/pinUtils";
+import PinEntry from "@/components/report/PinEntry";
 import VibeScoreCard from "@/components/admin/VibeScoreCard";
 import BreakdownTable from "@/components/admin/BreakdownTable";
 import RiskFlags from "@/components/admin/RiskFlags";
@@ -13,6 +15,17 @@ export default function SharedReport() {
   const [loading, setLoading] = useState(true);
   const [expired, setExpired] = useState(false);
   const [notFound, setNotFound] = useState(false);
+
+  // PIN gate state
+  const [needsPin, setNeedsPin] = useState(false);
+  const [pinVerified, setPinVerified] = useState(false);
+  const [reportData, setReportData] = useState<{
+    leadId: string;
+    pinHash: string | null;
+    pinSalt: string | null;
+  } | null>(null);
+
+  // Report data
   const [propertyName, setPropertyName] = useState("");
   const [staffCount, setStaffCount] = useState<number | null>(null);
   const [turnoverRate, setTurnoverRate] = useState<number | null>(null);
@@ -21,10 +34,9 @@ export default function SharedReport() {
   useEffect(() => {
     if (!token) return;
     const load = async () => {
-      // Look up shared report by token
       const { data: report, error } = await supabase
         .from("shared_reports" as any)
-        .select("lead_id, expires_at")
+        .select("lead_id, expires_at, pin_hash, pin_salt")
         .eq("token", token)
         .single();
 
@@ -41,33 +53,60 @@ export default function SharedReport() {
         return;
       }
 
-      // Fetch lead info via RPC (no direct table access needed for public)
-      const { data: leadData } = await supabase
-        .from("leads")
-        .select("property_name, staff_count, turnover_rate")
-        .eq("id", r.lead_id)
-        .single();
-
-      if (leadData) {
-        setPropertyName(leadData.property_name);
-        setStaffCount(leadData.staff_count);
-        setTurnoverRate(leadData.turnover_rate);
+      // If report has a PIN, show PIN entry first
+      if (r.pin_hash) {
+        setReportData({ leadId: r.lead_id, pinHash: r.pin_hash, pinSalt: r.pin_salt });
+        // Fetch just the property name for the PIN screen
+        const { data: leadData } = await supabase
+          .from("leads")
+          .select("property_name")
+          .eq("id", r.lead_id)
+          .single();
+        if (leadData) setPropertyName(leadData.property_name);
+        setNeedsPin(true);
+        setLoading(false);
+        return;
       }
 
-      // Fetch responses via edge function or RPC since anon can't read vibe_check_responses
-      // For now, use an edge function approach. Since we need the data, let's use the get-dossier pattern
-      // Actually, shared reports are read by authenticated admins who generated them, and the public
-      // page needs the data. We'll fetch via a function.
-      // WORKAROUND: use supabase function to get aggregated data
-      const { data: respData } = await supabase.functions.invoke("get-vibe-responses", {
-        body: { lead_id: r.lead_id },
-      });
-
-      setResponses((respData?.responses as VibeResponse[]) || []);
-      setLoading(false);
+      // No PIN — load report directly (legacy links)
+      await loadReportData(r.lead_id);
     };
     load();
   }, [token]);
+
+  const loadReportData = async (leadId: string) => {
+    const { data: leadData } = await supabase
+      .from("leads")
+      .select("property_name, staff_count, turnover_rate")
+      .eq("id", leadId)
+      .single();
+
+    if (leadData) {
+      setPropertyName(leadData.property_name);
+      setStaffCount(leadData.staff_count);
+      setTurnoverRate(leadData.turnover_rate);
+    }
+
+    const { data: respData } = await supabase.functions.invoke("get-vibe-responses", {
+      body: { lead_id: leadId },
+    });
+
+    setResponses((respData?.responses as VibeResponse[]) || []);
+    setPinVerified(true);
+    setNeedsPin(false);
+    setLoading(false);
+  };
+
+  const handlePinSubmit = async (enteredPin: string): Promise<boolean> => {
+    if (!reportData?.pinHash || !reportData?.pinSalt) return false;
+    const hash = await hashPin(enteredPin, reportData.pinSalt);
+    if (hash === reportData.pinHash) {
+      setLoading(true);
+      await loadReportData(reportData.leadId);
+      return true;
+    }
+    return false;
+  };
 
   if (loading) {
     return (
@@ -98,6 +137,10 @@ export default function SharedReport() {
         </div>
       </div>
     );
+  }
+
+  if (needsPin && !pinVerified) {
+    return <PinEntry propertyName={propertyName} onSubmit={handlePinSubmit} />;
   }
 
   const deptBreakdown = groupByField(responses, "department");
