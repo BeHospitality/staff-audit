@@ -286,17 +286,85 @@ export type Database = {
         }
         Relationships: []
       }
+      vibe_check_responses: {
+        Row: {
+          anonymous_id: string
+          created_at: string
+          department: string
+          employment_type: string
+          id: string
+          lead_id: string | null
+          q1_score: number
+          q2_score: number
+          q3_score: number
+          q4_score: number
+          q5_score: number
+          role_level: string
+          tenure: string
+        }
+        Insert: {
+          anonymous_id: string
+          created_at?: string
+          department: string
+          employment_type: string
+          id?: string
+          lead_id?: string | null
+          q1_score: number
+          q2_score: number
+          q3_score: number
+          q4_score: number
+          q5_score: number
+          role_level: string
+          tenure: string
+        }
+        Update: {
+          anonymous_id?: string
+          created_at?: string
+          department?: string
+          employment_type?: string
+          id?: string
+          lead_id?: string | null
+          q1_score?: number
+          q2_score?: number
+          q3_score?: number
+          q4_score?: number
+          q5_score?: number
+          role_level?: string
+          tenure?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vibe_check_responses_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_vibe_check_property: {
+        Args: { check_code: string }
+        Returns: {
+          lead_id: string
+          property_name: string
+          staff_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_vibe_check_responses: {
+        Args: { lead_uuid: string }
+        Returns: undefined
       }
     }
     Enums: {
