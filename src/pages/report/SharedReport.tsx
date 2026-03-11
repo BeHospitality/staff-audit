@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { hashPin } from "@/utils/pinUtils";
 import PinEntry from "@/components/report/PinEntry";
 import VibeScoreCard from "@/components/admin/VibeScoreCard";
 import BreakdownTable from "@/components/admin/BreakdownTable";
@@ -19,11 +18,6 @@ export default function SharedReport() {
   // PIN gate state
   const [needsPin, setNeedsPin] = useState(false);
   const [pinVerified, setPinVerified] = useState(false);
-  const [reportData, setReportData] = useState<{
-    leadId: string;
-    pinHash: string | null;
-    pinSalt: string | null;
-  } | null>(null);
 
   // Report data
   const [propertyName, setPropertyName] = useState("");
@@ -34,75 +28,78 @@ export default function SharedReport() {
   useEffect(() => {
     if (!token) return;
     const load = async () => {
-      const { data: report, error } = await supabase
-        .from("shared_reports" as any)
-        .select("lead_id, expires_at, pin_hash, pin_salt")
-        .eq("token", token)
-        .single();
+      // Call server-side verification (no PIN = initial check)
+      const { data, error } = await supabase.functions.invoke("verify-shared-report", {
+        body: { token },
+      });
 
-      if (error || !report) {
+      if (error) {
+        // Check for specific HTTP errors from the function
+        const status = (error as any)?.status;
+        if (status === 410) {
+          setExpired(true);
+        } else if (status === 404) {
+          setNotFound(true);
+        } else {
+          // Try to parse the response for error details
+          setNotFound(true);
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (data?.error === "not_found") {
         setNotFound(true);
         setLoading(false);
         return;
       }
 
-      const r = report as any;
-      if (r.expires_at && new Date(r.expires_at) < new Date()) {
+      if (data?.error === "expired") {
         setExpired(true);
         setLoading(false);
         return;
       }
 
-      // If report has a PIN, show PIN entry first
-      if (r.pin_hash) {
-        setReportData({ leadId: r.lead_id, pinHash: r.pin_hash, pinSalt: r.pin_salt });
-        // Fetch just the property name for the PIN screen using secure RPC
-        const { data: leadData } = await supabase.rpc("get_lead_report_data", {
-          p_lead_id: r.lead_id,
-        });
-        const leadRow = Array.isArray(leadData) ? leadData[0] : leadData;
-        if (leadRow) setPropertyName(leadRow.property_name);
+      if (data?.needs_pin) {
+        setPropertyName(data.property_name || "");
         setNeedsPin(true);
         setLoading(false);
         return;
       }
 
-      // No PIN — load report directly (legacy links)
-      await loadReportData(r.lead_id);
+      // No PIN required — report data returned directly
+      if (data?.verified) {
+        setPropertyName(data.property_name || "");
+        setStaffCount(data.staff_count);
+        setTurnoverRate(data.turnover_rate);
+        setResponses((data.responses as VibeResponse[]) || []);
+        setPinVerified(true);
+        setLoading(false);
+      }
     };
     load();
   }, [token]);
 
-  const loadReportData = async (leadId: string) => {
-    const { data: leadData } = await supabase.rpc("get_lead_report_data", {
-      p_lead_id: leadId,
+  const handlePinSubmit = async (enteredPin: string): Promise<boolean> => {
+    // Server-side PIN verification
+    const { data, error } = await supabase.functions.invoke("verify-shared-report", {
+      body: { token, pin: enteredPin },
     });
-    const leadRow = Array.isArray(leadData) ? leadData[0] : leadData;
 
-    if (leadRow) {
-      setPropertyName(leadRow.property_name);
-      setStaffCount(leadRow.staff_count);
-      setTurnoverRate(leadRow.turnover_rate);
+    if (error || data?.error === "invalid_pin") {
+      return false;
     }
 
-    const { data: respData } = await supabase.functions.invoke("get-vibe-responses", {
-      body: { lead_id: leadId },
-    });
-
-    setResponses((respData?.responses as VibeResponse[]) || []);
-    setPinVerified(true);
-    setNeedsPin(false);
-    setLoading(false);
-  };
-
-  const handlePinSubmit = async (enteredPin: string): Promise<boolean> => {
-    if (!reportData?.pinHash || !reportData?.pinSalt) return false;
-    const hash = await hashPin(enteredPin, reportData.pinSalt);
-    if (hash === reportData.pinHash) {
-      setLoading(true);
-      await loadReportData(reportData.leadId);
+    if (data?.verified) {
+      setPropertyName(data.property_name || "");
+      setStaffCount(data.staff_count);
+      setTurnoverRate(data.turnover_rate);
+      setResponses((data.responses as VibeResponse[]) || []);
+      setPinVerified(true);
+      setNeedsPin(false);
       return true;
     }
+
     return false;
   };
 
