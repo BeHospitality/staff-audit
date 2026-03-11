@@ -39,6 +39,7 @@ const App = () => (
           <Route path="/report/:token" element={<SharedReport />} />
           <Route path="/thank-you/:leadId" element={<ThankYou />} />
           <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           {/* Redirect old auth routes */}
           <Route path="/pulse/login" element={<Navigate to="/admin" replace />} />
           <Route path="/pulse/signup" element={<Navigate to="/" replace />} />

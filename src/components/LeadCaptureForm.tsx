@@ -286,7 +286,7 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
               type="submit"
               variant="gold"
               size="lg"
-              disabled={loading}
+              disabled={loading || !gdprConsent}
               className="text-base px-10 py-6 text-lg shadow-lg shadow-primary/20 hover-scale w-full md:w-auto"
             >
               {loading ? (
