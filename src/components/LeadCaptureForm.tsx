@@ -117,6 +117,8 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
         p_biggest_challenge: leadData.biggest_challenge || null,
         p_vibe_check_code: leadData.vibe_check_code || null,
         p_vibe_check_total_staff: leadData.vibe_check_total_staff || null,
+        p_gdpr_consent: true,
+        p_consent_given_at: new Date().toISOString(),
       });
 
       if (error) throw error;
