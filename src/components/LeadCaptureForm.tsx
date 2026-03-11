@@ -141,7 +141,7 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
         },
       }).catch(() => {});
 
-      navigate(`/thank-you?id=${data.id}`);
+      navigate(`/thank-you?id=${leadId}`);
     } catch (err: any) {
       console.error("Lead submission error:", err);
       setSubmitError("Something went wrong. Please try again or email us at team@beconnect.ie");

@@ -74,16 +74,15 @@ export default function SharedReport() {
   }, [token]);
 
   const loadReportData = async (leadId: string) => {
-    const { data: leadData } = await supabase
-      .from("leads")
-      .select("property_name, staff_count, turnover_rate")
-      .eq("id", leadId)
-      .single();
+    const { data: leadData } = await supabase.rpc("get_lead_report_data", {
+      p_lead_id: leadId,
+    });
+    const leadRow = Array.isArray(leadData) ? leadData[0] : leadData;
 
-    if (leadData) {
-      setPropertyName(leadData.property_name);
-      setStaffCount(leadData.staff_count);
-      setTurnoverRate(leadData.turnover_rate);
+    if (leadRow) {
+      setPropertyName(leadRow.property_name);
+      setStaffCount(leadRow.staff_count);
+      setTurnoverRate(leadRow.turnover_rate);
     }
 
     const { data: respData } = await supabase.functions.invoke("get-vibe-responses", {

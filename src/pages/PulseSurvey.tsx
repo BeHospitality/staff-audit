@@ -70,18 +70,14 @@ export default function PulseSurvey() {
       open_feedback: feedback || null,
     });
 
-    // Increment the vibe_check_responses counter on the matching lead
-    const { data: leadRow } = await supabase
-      .from("leads")
-      .select("id, vibe_check_responses")
-      .eq("vibe_check_code", orgCode)
-      .maybeSingle();
-
-    if (leadRow) {
-      await supabase
-        .from("leads")
-        .update({ vibe_check_responses: (leadRow.vibe_check_responses ?? 0) + 1 })
-        .eq("id", leadRow.id);
+    // Increment the vibe_check_responses counter using secure RPC
+    const { data: propData } = await supabase.rpc("get_vibe_check_property", {
+      check_code: orgCode,
+    });
+    if (propData && propData.length > 0) {
+      await supabase.rpc("increment_vibe_check_responses", {
+        lead_uuid: propData[0].lead_id,
+      });
     }
 
     setLoading(false);
