@@ -23,6 +23,9 @@ interface LeadData {
   turnover_rate: number | null;
   biggest_challenge: string | null;
   vibe_check_responses: number | null;
+  vibe_check_code: string | null;
+  converted_to_client: boolean;
+  converted_at: string | null;
   created_at: string;
 }
 
