@@ -46,11 +46,13 @@ export type Database = {
       leads: {
         Row: {
           biggest_challenge: string | null
+          consent_given_at: string | null
           created_at: string
           dossier_pin: string | null
           dossier_url: string | null
           email: string
           full_name: string
+          gdpr_consent: boolean
           id: string
           phone: string
           property_name: string
@@ -67,11 +69,13 @@ export type Database = {
         }
         Insert: {
           biggest_challenge?: string | null
+          consent_given_at?: string | null
           created_at?: string
           dossier_pin?: string | null
           dossier_url?: string | null
           email: string
           full_name: string
+          gdpr_consent?: boolean
           id?: string
           phone: string
           property_name: string
@@ -88,11 +92,13 @@ export type Database = {
         }
         Update: {
           biggest_challenge?: string | null
+          consent_given_at?: string | null
           created_at?: string
           dossier_pin?: string | null
           dossier_url?: string | null
           email?: string
           full_name?: string
+          gdpr_consent?: boolean
           id?: string
           phone?: string
           property_name?: string
@@ -388,21 +394,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      capture_lead: {
-        Args: {
-          p_biggest_challenge?: string
-          p_email: string
-          p_full_name: string
-          p_phone: string
-          p_property_name: string
-          p_role?: string
-          p_staff_count?: number
-          p_turnover_rate?: number
-          p_vibe_check_code?: string
-          p_vibe_check_total_staff?: number
-        }
-        Returns: string
-      }
+      capture_lead:
+        | {
+            Args: {
+              p_biggest_challenge?: string
+              p_email: string
+              p_full_name: string
+              p_phone: string
+              p_property_name: string
+              p_role?: string
+              p_staff_count?: number
+              p_turnover_rate?: number
+              p_vibe_check_code?: string
+              p_vibe_check_total_staff?: number
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_biggest_challenge?: string
+              p_consent_given_at?: string
+              p_email: string
+              p_full_name: string
+              p_gdpr_consent?: boolean
+              p_phone: string
+              p_property_name: string
+              p_role?: string
+              p_staff_count?: number
+              p_turnover_rate?: number
+              p_vibe_check_code?: string
+              p_vibe_check_total_staff?: number
+            }
+            Returns: string
+          }
       get_lead_report_data: {
         Args: { p_lead_id: string }
         Returns: {
