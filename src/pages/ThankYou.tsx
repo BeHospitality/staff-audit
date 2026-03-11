@@ -32,15 +32,14 @@ export default function ThankYou() {
   useEffect(() => {
     if (!leadId) return;
     (async () => {
-      const { data, error } = await supabase
-        .from("leads" as any)
-        .select("id, full_name, property_name, email, staff_count, turnover_rate, vibe_check_code, vibe_check_responses, vibe_check_total_staff")
-        .eq("id", leadId)
-        .single();
-      if (error || !data) {
+      const { data, error } = await supabase.rpc("get_thank_you_data", {
+        p_lead_id: leadId,
+      });
+      if (error || !data || (Array.isArray(data) && data.length === 0)) {
         setNotFound(true);
       } else {
-        setLead(data as any);
+        const row = Array.isArray(data) ? data[0] : data;
+        setLead(row as any);
       }
       setLoading(false);
     })();

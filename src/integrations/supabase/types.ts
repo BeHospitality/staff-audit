@@ -388,6 +388,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      capture_lead: {
+        Args: {
+          p_biggest_challenge?: string
+          p_email: string
+          p_full_name: string
+          p_phone: string
+          p_property_name: string
+          p_role?: string
+          p_staff_count?: number
+          p_turnover_rate?: number
+          p_vibe_check_code?: string
+          p_vibe_check_total_staff?: number
+        }
+        Returns: string
+      }
+      get_lead_report_data: {
+        Args: { p_lead_id: string }
+        Returns: {
+          property_name: string
+          staff_count: number
+          turnover_rate: number
+        }[]
+      }
+      get_thank_you_data: {
+        Args: { p_lead_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+          property_name: string
+          staff_count: number
+          turnover_rate: number
+          vibe_check_code: string
+          vibe_check_responses: number
+          vibe_check_total_staff: number
+        }[]
+      }
       get_vibe_check_property: {
         Args: { check_code: string }
         Returns: {
