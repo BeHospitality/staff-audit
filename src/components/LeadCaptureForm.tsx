@@ -102,12 +102,19 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
         status: "new" as const,
       };
 
-      // Try insert first, on conflict update
-      const { data, error } = await supabase
-        .from("leads")
-        .upsert(leadData, { onConflict: "email", ignoreDuplicates: false })
-        .select("id")
-        .single();
+      // Use secure RPC to capture lead and get ID back
+      const { data: leadId, error } = await supabase.rpc("capture_lead", {
+        p_full_name: leadData.full_name,
+        p_email: leadData.email,
+        p_phone: leadData.phone,
+        p_property_name: leadData.property_name,
+        p_role: leadData.role || null,
+        p_staff_count: leadData.staff_count || null,
+        p_turnover_rate: leadData.turnover_rate || null,
+        p_biggest_challenge: leadData.biggest_challenge || null,
+        p_vibe_check_code: leadData.vibe_check_code || null,
+        p_vibe_check_total_staff: leadData.vibe_check_total_staff || null,
+      });
 
       if (error) throw error;
 
