@@ -56,13 +56,12 @@ export default function SharedReport() {
       // If report has a PIN, show PIN entry first
       if (r.pin_hash) {
         setReportData({ leadId: r.lead_id, pinHash: r.pin_hash, pinSalt: r.pin_salt });
-        // Fetch just the property name for the PIN screen
-        const { data: leadData } = await supabase
-          .from("leads")
-          .select("property_name")
-          .eq("id", r.lead_id)
-          .single();
-        if (leadData) setPropertyName(leadData.property_name);
+        // Fetch just the property name for the PIN screen using secure RPC
+        const { data: leadData } = await supabase.rpc("get_lead_report_data", {
+          p_lead_id: r.lead_id,
+        });
+        const leadRow = Array.isArray(leadData) ? leadData[0] : leadData;
+        if (leadRow) setPropertyName(leadRow.property_name);
         setNeedsPin(true);
         setLoading(false);
         return;
