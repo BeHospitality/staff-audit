@@ -49,7 +49,7 @@ export default function DossierView() {
     const load = async () => {
       const { data: leadData } = await supabase
         .from("leads")
-        .select("id, property_name, full_name, email, phone, staff_count, turnover_rate, biggest_challenge, vibe_check_responses, created_at")
+        .select("id, property_name, full_name, email, phone, staff_count, turnover_rate, biggest_challenge, vibe_check_responses, vibe_check_code, converted_to_client, converted_at, created_at")
         .eq("id", leadId)
         .single();
 
