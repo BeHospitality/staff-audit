@@ -7,6 +7,7 @@ import VibeScoreCard from "@/components/admin/VibeScoreCard";
 import BreakdownTable from "@/components/admin/BreakdownTable";
 import RiskFlags from "@/components/admin/RiskFlags";
 import HubCTA from "@/components/admin/HubCTA";
+import ConvertToClient from "@/components/admin/ConvertToClient";
 import { Button } from "@/components/ui/button";
 import { groupByField, type VibeResponse } from "@/utils/dossierCalculations";
 import { Activity, ArrowLeft, Eye, EyeOff, Download, Link2, Loader2, Copy, CheckCircle2, X, RefreshCw } from "lucide-react";
