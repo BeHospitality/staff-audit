@@ -247,6 +247,14 @@ export default function DossierView() {
             <span className="font-bold text-sm">{lead.property_name} — Dossier</span>
           </div>
           <div className="flex items-center gap-2">
+            {lead && (
+              <ConvertToClient
+                lead={lead}
+                onConverted={() => {
+                  setLead((prev) => prev ? { ...prev, converted_to_client: true, converted_at: new Date().toISOString() } : prev);
+                }}
+              />
+            )}
             <Button
               variant={shareable ? "default" : "outline"}
               size="sm"
