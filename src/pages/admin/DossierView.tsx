@@ -7,6 +7,7 @@ import VibeScoreCard from "@/components/admin/VibeScoreCard";
 import BreakdownTable from "@/components/admin/BreakdownTable";
 import RiskFlags from "@/components/admin/RiskFlags";
 import HubCTA from "@/components/admin/HubCTA";
+import ConvertToClient from "@/components/admin/ConvertToClient";
 import { Button } from "@/components/ui/button";
 import { groupByField, type VibeResponse } from "@/utils/dossierCalculations";
 import { Activity, ArrowLeft, Eye, EyeOff, Download, Link2, Loader2, Copy, CheckCircle2, X, RefreshCw } from "lucide-react";
@@ -22,6 +23,9 @@ interface LeadData {
   turnover_rate: number | null;
   biggest_challenge: string | null;
   vibe_check_responses: number | null;
+  vibe_check_code: string | null;
+  converted_to_client: boolean;
+  converted_at: string | null;
   created_at: string;
 }
 
@@ -45,7 +49,7 @@ export default function DossierView() {
     const load = async () => {
       const { data: leadData } = await supabase
         .from("leads")
-        .select("id, property_name, full_name, email, phone, staff_count, turnover_rate, biggest_challenge, vibe_check_responses, created_at")
+        .select("id, property_name, full_name, email, phone, staff_count, turnover_rate, biggest_challenge, vibe_check_responses, vibe_check_code, converted_to_client, converted_at, created_at")
         .eq("id", leadId)
         .single();
 
@@ -243,6 +247,14 @@ export default function DossierView() {
             <span className="font-bold text-sm">{lead.property_name} — Dossier</span>
           </div>
           <div className="flex items-center gap-2">
+            {lead && (
+              <ConvertToClient
+                lead={lead}
+                onConverted={() => {
+                  setLead((prev) => prev ? { ...prev, converted_to_client: true, converted_at: new Date().toISOString() } : prev);
+                }}
+              />
+            )}
             <Button
               variant={shareable ? "default" : "outline"}
               size="sm"
