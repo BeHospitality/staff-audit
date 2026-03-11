@@ -72,6 +72,7 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) newErrors.email = "Please enter a valid email";
     const cleanedPhone = phone.replace(/\s+/g, "").replace(/-/g, "");
     if (!cleanedPhone || cleanedPhone.length < 7) newErrors.phone = "Please enter a valid phone number";
+    if (!gdprConsent) newErrors.consent = "You must consent to be contacted to continue";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
