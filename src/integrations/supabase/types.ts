@@ -47,6 +47,8 @@ export type Database = {
         Row: {
           biggest_challenge: string | null
           consent_given_at: string | null
+          converted_at: string | null
+          converted_to_client: boolean
           created_at: string
           dossier_pin: string | null
           dossier_url: string | null
@@ -70,6 +72,8 @@ export type Database = {
         Insert: {
           biggest_challenge?: string | null
           consent_given_at?: string | null
+          converted_at?: string | null
+          converted_to_client?: boolean
           created_at?: string
           dossier_pin?: string | null
           dossier_url?: string | null
@@ -93,6 +97,8 @@ export type Database = {
         Update: {
           biggest_challenge?: string | null
           consent_given_at?: string | null
+          converted_at?: string | null
+          converted_to_client?: boolean
           created_at?: string
           dossier_pin?: string | null
           dossier_url?: string | null
