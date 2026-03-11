@@ -46,7 +46,7 @@ export default function HubCTA({ responses, propertyName, staffCount, turnoverRa
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Your Vibe Check data migrates directly into the Hub — no re-entry, no starting from scratch.
+        Vibe Check results are included in your property dossier for the sales process. When prospects become clients, their data can be transferred to the Hub for ongoing workforce management.
       </p>
 
       <div className="border-t border-border pt-5 space-y-2">
