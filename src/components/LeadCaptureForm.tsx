@@ -46,6 +46,7 @@ interface FormErrors {
   propertyName?: string;
   email?: string;
   phone?: string;
+  consent?: string;
 }
 
 export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate }: LeadCaptureFormProps) {
