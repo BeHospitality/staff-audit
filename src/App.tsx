@@ -14,6 +14,7 @@ import DossierIndex from "./pages/admin/DossierIndex";
 import DossierView from "./pages/admin/DossierView";
 import SharedReport from "./pages/report/SharedReport";
 import ThankYou from "./pages/ThankYou";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
