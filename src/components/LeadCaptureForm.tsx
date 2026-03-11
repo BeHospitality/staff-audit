@@ -60,6 +60,7 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
   const [turnoverRate, setTurnoverRate] = useState(prefillTurnoverRate?.toString() ?? "");
   const [turnoverNotSure, setTurnoverNotSure] = useState(false);
   const [biggestChallenge, setBiggestChallenge] = useState("");
+  const [gdprConsent, setGdprConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState("");
