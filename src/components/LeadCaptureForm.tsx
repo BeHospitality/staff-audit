@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,7 @@ interface FormErrors {
   propertyName?: string;
   email?: string;
   phone?: string;
+  consent?: string;
 }
 
 export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate }: LeadCaptureFormProps) {
@@ -59,6 +60,7 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
   const [turnoverRate, setTurnoverRate] = useState(prefillTurnoverRate?.toString() ?? "");
   const [turnoverNotSure, setTurnoverNotSure] = useState(false);
   const [biggestChallenge, setBiggestChallenge] = useState("");
+  const [gdprConsent, setGdprConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState("");
@@ -70,6 +72,7 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) newErrors.email = "Please enter a valid email";
     const cleanedPhone = phone.replace(/\s+/g, "").replace(/-/g, "");
     if (!cleanedPhone || cleanedPhone.length < 7) newErrors.phone = "Please enter a valid phone number";
+    if (!gdprConsent) newErrors.consent = "You must consent to be contacted to continue";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -114,6 +117,8 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
         p_biggest_challenge: leadData.biggest_challenge || null,
         p_vibe_check_code: leadData.vibe_check_code || null,
         p_vibe_check_total_staff: leadData.vibe_check_total_staff || null,
+        p_gdpr_consent: true,
+        p_consent_given_at: new Date().toISOString(),
       });
 
       if (error) throw error;
@@ -250,6 +255,28 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
             </div>
           </div>
 
+          {/* GDPR Consent */}
+          <div className="bg-muted/50 rounded-lg p-4 border border-border">
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="gdpr-consent"
+                checked={gdprConsent}
+                onCheckedChange={(checked) => {
+                  setGdprConsent(checked === true);
+                  if (checked) setErrors((prev) => ({ ...prev, consent: undefined }));
+                }}
+                className="mt-0.5"
+              />
+              <label htmlFor="gdpr-consent" className="text-sm text-foreground cursor-pointer leading-relaxed">
+                I consent to Be Connect contacting me about their workforce stability platform.{" "}
+                <Link to="/privacy" className="text-primary hover:underline font-medium" target="_blank">
+                  Privacy Policy
+                </Link>
+              </label>
+            </div>
+            {errors.consent && <p className="text-destructive text-xs mt-2 ml-7">{errors.consent}</p>}
+          </div>
+
           {submitError && (
             <p className="text-destructive text-sm text-center">{submitError}</p>
           )}
@@ -259,7 +286,7 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
               type="submit"
               variant="gold"
               size="lg"
-              disabled={loading}
+              disabled={loading || !gdprConsent}
               className="text-base px-10 py-6 text-lg shadow-lg shadow-primary/20 hover-scale w-full md:w-auto"
             >
               {loading ? (

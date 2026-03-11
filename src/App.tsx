@@ -14,6 +14,7 @@ import DossierIndex from "./pages/admin/DossierIndex";
 import DossierView from "./pages/admin/DossierView";
 import SharedReport from "./pages/report/SharedReport";
 import ThankYou from "./pages/ThankYou";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/report/:token" element={<SharedReport />} />
           <Route path="/thank-you/:leadId" element={<ThankYou />} />
           <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           {/* Redirect old auth routes */}
           <Route path="/pulse/login" element={<Navigate to="/admin" replace />} />
           <Route path="/pulse/signup" element={<Navigate to="/" replace />} />
