@@ -255,6 +255,28 @@ export default function LeadCaptureForm({ prefillStaffCount, prefillTurnoverRate
             </div>
           </div>
 
+          {/* GDPR Consent */}
+          <div className="bg-muted/50 rounded-lg p-4 border border-border">
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="gdpr-consent"
+                checked={gdprConsent}
+                onCheckedChange={(checked) => {
+                  setGdprConsent(checked === true);
+                  if (checked) setErrors((prev) => ({ ...prev, consent: undefined }));
+                }}
+                className="mt-0.5"
+              />
+              <label htmlFor="gdpr-consent" className="text-sm text-foreground cursor-pointer leading-relaxed">
+                I consent to Be Connect contacting me about their workforce stability platform.{" "}
+                <Link to="/privacy" className="text-primary hover:underline font-medium" target="_blank">
+                  Privacy Policy
+                </Link>
+              </label>
+            </div>
+            {errors.consent && <p className="text-destructive text-xs mt-2 ml-7">{errors.consent}</p>}
+          </div>
+
           {submitError && (
             <p className="text-destructive text-sm text-center">{submitError}</p>
           )}
